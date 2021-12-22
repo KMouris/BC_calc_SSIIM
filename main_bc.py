@@ -158,8 +158,27 @@ def resample_time(df_time, flow_array, interval):
 
 
 def monthly_inflow_avg(df_time, flow_array):
-    pass
+    """
+    Function calculates the monthly inflow volume, by averaging the total inflow (sum of all inflows) for a given month
+    to get average monthly inflow (m3/s) and then multiplying it by 3600 * 24 * days in the corresponding month to get
+    total volume (m3).
 
+    Args:
+    ----------------------------------------
+    :param df_time: data frame, with original time intervals, in datetime format
+    :param flow_array: np.array, with inflow data
+
+    :return: data frame, with new time intervals, and np.array, with the monthly inflow volume for each month in the
+    analysis time range.
+    """
+    total_inflow = np.sum(flow_array, axis=1)
+    month_dates, month_flow_total = resample_time(df_time, total_inflow, interval=2)
+
+    days_in_month = np.array(month_dates.days_in_month)
+
+    month_volume = np.multiply(month_flow_total[:, 0], days_in_month) * 3600 * 24
+
+    return month_dates, month_volume
 
 
 # READ INPUT FILES ---------------------------------------------------------------------------------------------
@@ -183,5 +202,6 @@ if time_interval != 0:
 total_flows = calculate_outflows_constant_wl(q_array, turbine_capacity)
 
 # Calculate monthly volume (for concentration data)
+month_time_df, monthly_volume = monthly_inflow_avg(time_df, q_array)
 x=1
 
