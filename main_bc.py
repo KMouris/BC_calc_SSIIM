@@ -117,6 +117,51 @@ def modify_time_interval(df_time, flow_array, interval):
     return resampled_dates, resampled_flow
 
 
+def resample_time(df_time, flow_array, interval):
+    """
+    Function re-samples the initial time intervals to a new interval and averages the inflow data, for each watershed,
+    for the new time interval.
+
+    It first converts the flow array to a data frame, with the original time data as index. It then uses the df.resample
+    tool to resample the data to a given frequency, by averaging the values.
+
+    Args:
+    ----------------------------
+    :param df_time: data frame, with original time intervals, in datetime format
+    :param flow_array: np.array, with inflow data
+    :param interval: 1, if re-sample is to daily, 2 if re-sample is to monthly
+
+    :return: data frame, with new time intervals, and np.array, with the flow data averaged for the new time interval.
+
+    Note: Function currently only re-samples to daily and monthly data, and averages the flow data for the new interval.
+    If the user wants a different frequency, include options for the wanted frequency
+    (check: https://regenerativetoday.com/pandas-data_range-function/)
+    """
+
+    df_total = pd.DataFrame(data=flow_array, index=df_time)
+
+    if interval == 1:   # Day
+        freq = "D"
+    elif interval == 2:  # Month
+        freq = "MS"
+    else:
+        print(f"No resampling was done, since {interval} is not a valid entry")
+        return df_time, flow_array
+
+    df_resampled = df_total.resample(freq).mean()
+    resampled_flow = np.array(df_resampled)
+    resampled_dates = pd.to_datetime(df_resampled.index)
+
+    return resampled_dates, resampled_flow
+
+    x=1
+
+
+def monthly_inflow_avg(df_time, flow_array):
+    pass
+
+
+
 # READ INPUT FILES ---------------------------------------------------------------------------------------------
 
 # read .b16 file with discharge data to df
@@ -132,6 +177,7 @@ q_array = extract_discharge(q_df)
 # Option to convert to daily or monthly time discretization
 if time_interval != 0:
     time_df, q_array = modify_time_interval(time_df, q_array, time_interval)
+    resample_time(time_df, q_array, time_interval)
 
 # Calculate outflows and save inflows and outflows to array
 total_flows = calculate_outflows_constant_wl(q_array, turbine_capacity)
