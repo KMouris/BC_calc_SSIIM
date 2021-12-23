@@ -154,14 +154,12 @@ def resample_time(df_time, flow_array, interval):
 
     return resampled_dates, resampled_flow
 
-    x=1
-
 
 def monthly_inflow_avg(df_time, flow_array):
     """
-    Function calculates the monthly inflow volume, by averaging the total inflow (sum of all inflows) for a given month
-    to get average monthly inflow (m3/s) and then multiplying it by 3600 * 24 * days in the corresponding month to get
-    total volume (m3).
+    Function calculates the monthly inflow volume, by averaging the total inflow (for each sub-catchment individually)
+    for a given month to get average monthly inflow (m3/s) for each, and then multiplying it by 3600 * 24 * days in
+    the corresponding month to get total volume (m3) for each sub-catchment.
 
     Args:
     ----------------------------------------
@@ -171,17 +169,90 @@ def monthly_inflow_avg(df_time, flow_array):
     :return: data frame, with new time intervals, and np.array, with the monthly inflow volume for each month in the
     analysis time range.
     """
-    total_inflow = np.sum(flow_array, axis=1)
-    month_dates, month_flow_total = resample_time(df_time, total_inflow, interval=2)
+    # total_inflow = np.sum(flow_array, axis=1)
+    month_dates, month_flow_total = resample_time(df_time, flow_array, interval=2)
 
-    days_in_month = np.array(month_dates.days_in_month)
+    days_in_month = np.array(month_dates.days_in_month).reshape(month_flow_total.shape[0], 1)
 
-    month_volume = np.multiply(month_flow_total[:, 0], days_in_month) * 3600 * 24
+    month_volume = np.multiply(month_flow_total, days_in_month) * 3600 * 24
 
     return month_dates, month_volume
 
 
+def read_soil_data(catchment_list):
+    """
+    Functions loops through each .txt file in the input soil data folder and extracts the total soil yield (ton/month)
+    for each sub-catchment, as well as the date data. It then copies the SY data to an array, which must be in the
+    following sub-catchment order: [Devoll, Holta, Zalli and Skebices], or in the order dictated by the variable
+    'catchment_order' in config.py.
+
+    Args:
+    ----------------------------------
+    :param catchment_list: list of strings, with the path to each .txt file in the input soil folder
+    :return: data frame, with monthly time intervals, corresponding to each SY data, and np.array, with the monthly
+    total soil yield for each subcatchment (in each column), and for each time interval (row)
+
+    Note: the name of the catchment, as it appears in the variable 'catchment_order', must be in the .txt file
+    corresponding to that sub-catchment.
+
+    """
+    for i in range(0, len(catchment_list)):
+        df = pd.read_csv(catchment_list[i], sep='\t')
+        if i == 0:
+            # Generate array to save data
+            sy_array = np.full((df.shape[0], 4), 0.0)
+            # Get time data
+            date_df = pd.to_datetime(df['Date'], format='%Y%m')
+
+        # read total_sy column
+        temp_array = np.array(df['Total Sediment Yield [ton/month]'])
+        # Assign SY data to corresponding column
+        for c, c_name in enumerate(catchment_order):
+            if c_name.lower() in catchment_list[i].lower():
+                sy_array[:, c] = temp_array
+                break
+            else:
+                if c == len(catchment_order)-1:
+                    print(f"{catchment_list[i]} has no corresponding catchment in 'catchment_order' variable.")
+    return date_df, sy_array
+
+
+def calculate_concentration(sy_array, monthly_vol_array, sy_dates, vol_dates):
+    """
+    Function calculates the monthly volume concentration for each month in the discharge data, by following these steps:
+    1. Trim the SY data to match the months considered in the discharge data
+    2. Divide the SY data (ton/month) by the total monthly volume (m3/month), on a sub-catchment basis (column-wise)
+    and then multiply by 1000 kg/ton to get the mass concentration (kg/m3)
+    3. Divide the mass concentration (kg/m3) by the soil density (kg/m3) to get the monthly volume concentration (m3/m3)
+
+    Args:
+    --------------------------------------------------------------------
+    :param sy_array: np.array, with SY data (ton/month) for each sub-catchment
+    :param monthly_vol_array: np.array, with the monthly volume data for each sub-catchment (m3/month)
+    :param sy_dates: series, with dates considered in the SY data (each row is a different monthly interval)
+    :param vol_dates: series, with dates considered in the discharge data, and which will be used in the model
+
+    :return: np.array, with monthly volume concentration for each sub-catchment, for the time range in the discharge
+    analysis.
+    """
+    # Filter soil yield data for the months in the discharge data:
+    df_total = pd.DataFrame(data=sy_array, index=sy_dates)
+    df_trim = df_total.loc[vol_dates[0]:vol_dates[-1]]
+
+    # Extract trimmed Sy data to array (ton/month)
+    trimmed_sy_array = np.array(df_trim)
+
+    # Calculate monthly mass concentration (kg/m3):
+    mass_concent = np.divide(trimmed_sy_array, monthly_vol_array) * 1000
+    # Calculate volume concentration (m3/m3)
+    vol_concent = np.divide(mass_concent, soil_density)
+
+    return vol_concent
+
+
 # READ INPUT FILES ---------------------------------------------------------------------------------------------
+# Read SY data:
+filenames_soil = glob.glob(sy_folder + "/*.txt")
 
 # read .b16 file with discharge data to df
 q_df = pd.read_csv(q_path, sep='\t', header=0, skiprows=[1, 2])
@@ -190,10 +261,11 @@ q_df.rename(columns={'YY': 'year', 'MM': 'month', 'DD': 'day', 'HH': 'hour'}, in
 # Convert first 4 columns to datetime and save to array
 time_df = pd.to_datetime(q_df[['year', 'month', 'day', 'hour']])
 
+# GET FLOW DATA ----------------------------------------------------------------------------------------------
 # Extract discharge data
 q_array = extract_discharge(q_df)
 
-# Option to convert to daily or monthly time discretization
+# Option to convert to daily or monthly frequency
 if time_interval != 0:
     time_df, q_array = modify_time_interval(time_df, q_array, time_interval)
     resample_time(time_df, q_array, time_interval)
@@ -201,7 +273,22 @@ if time_interval != 0:
 # Calculate outflows and save inflows and outflows to array
 total_flows = calculate_outflows_constant_wl(q_array, turbine_capacity)
 
-# Calculate monthly volume (for concentration data)
+# ADD 3 ZEROS AT THE END OF THE TOTAL FLOWS (always) AND A 'Q' AT THE BEGINNING IN FINAL DF
+
+# GET CONCENTRATION DATA ----------------------------------------------------------------------------------------
+# Calculate monthly volume form inflow data(for concentration data)
 month_time_df, monthly_volume = monthly_inflow_avg(time_df, q_array)
+
+# Read total soil yield data and corresponding dates
+sy_dates_df, sy_array = read_soil_data(filenames_soil)
+
+# Calculate monthly concentration, for date range of discharge data:
+total_concentration_array = calculate_concentration(sy_array, monthly_volume, sy_dates_df, month_time_df)
+
+# SEPARATE MONTHLY CONCENTRATION FOR THE 3 INFLOW GRAIN SIZE FRACTIONS, EQUALLY
+
+# CALCULATE TIME IN SECONDS, TO A LIST
+
+# CONSTANTS FOR 'I' PART OF TIMEI
 x=1
 
