@@ -103,6 +103,21 @@ def resample_time(df_time, flow_array, interval):
     return resampled_dates, resampled_flow
 
 
+def time_to_seconds(df_time):
+    """
+    Function calculates the seconds between the beginning of the simulation and each time interval and then transforms
+    it to seconds.
+
+    Args:
+    ------------------------------------
+    :param df_time: df, time series with each entry being a time interval for the simulation
+
+    :return: df, time series in seconds.
+    """
+    seconds = (df_time - df_time[0]).dt.total_seconds()
+    return seconds
+
+
 # Discharge functions
 def extract_discharge(input_df):
     """

@@ -47,7 +47,7 @@ total_concentration_array = calculate_concentration(sy_array, monthly_volume, sy
 # SEPARATE MONTHLY CONCENTRATION FOR THE 3 INFLOW GRAIN SIZE FRACTIONS, EQUALLY
 
 # CALCULATE TIME IN SECONDS, TO A LIST
-
+seconds_array = time_to_seconds(time_df)
 # CONSTANTS FOR 'I' PART OF TIMEI
 x=1
 
