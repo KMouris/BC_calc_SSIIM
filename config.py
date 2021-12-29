@@ -51,6 +51,8 @@ soil_density: float, soil density to be used to calculate monthly volume concent
 q_path = r'Y:\Abt1\hiwi\Oreamuno\Tasks\01_BC_Calculation\Example_Files\WaSim\y_opt.b16'
 sy_folder = r'Y:\Abt1\hiwi\Oreamuno\Tasks\01_BC_Calculation\Python\Soil_Input'
 
+resuls_folder = os.path.abspath(r'../Results')
+
 turbine_capacity = 108.02
 
 time_interval = 0
