@@ -48,6 +48,9 @@ total_concentration_array, trimmed_sy_dates = calculate_concentration(sy_array, 
 # Separate monthly concentration for the 3 inflow grain size fractions (equally) for each sub-catchment
 timei_concent_array = build_concentration_timei(total_concentration_array, trimmed_sy_dates, time_df)
 
+# upstream and downstream WL data for timei file
+us_ds_array = upstream_downstream_data(upstream_wl, downstream_wl, time_df)
+
 # Time steps in seconds
 seconds_array = time_to_seconds(time_df)
 # CONSTANTS FOR 'I' PART OF TIMEI

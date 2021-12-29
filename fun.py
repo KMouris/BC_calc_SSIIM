@@ -303,3 +303,34 @@ def build_concentration_timei(total_concentration, df_month, df_simulation_time)
                 break
     return concent_grain_fractions
 
+
+# TIMEI FILES
+def upstream_downstream_data(up, down, df_time):
+    """
+    Function fills the initial part (upstream and downstream data) of the 'I' dataset part of the timei file. It keeps
+    the upstream and downstream discharges at 0, and assigns the upstream and downstream water level for each
+    simulation time step.
+    The order of columns is [upstream_discharge, downstream_discharge, upstream_wl, downstream_wl] or [0, 0, num, num]
+
+    Args
+    ---------------------------------
+    :param up: float, with constant upstream water level (str, with path where .txt file with upstream WL data is)
+    :param down: float, with constant downstream water level (str, with path where .txt file with downstream WL data is)
+    :param df_time: df, time series with time steps in simulation
+
+    :return: np.array, with (ix4) size array, with upstream and downstream discharges (value of 0) and water levels
+    (constants).
+
+    Note: it currently only works for a constant upstream and downstream water level. If a time-dependent water level
+    is to be used, the corresponding code must be written to read the .txt file with the data, the time discretization,
+    and writing it to the corresponding array.
+    """
+    us_ds_array = np.full((df_time.shape[0], 4), 0.0)
+    if type(up) == int or float and type(down) == int or float:  # If input data are constant numerical type
+        us_ds_array[:, 2] = upstream_wl
+        us_ds_array[:, 3] = downstream_wl
+    else:
+        print("The program is not yet fit to read upstream and downstream water levels from .txt file")
+
+    return us_ds_array
+
