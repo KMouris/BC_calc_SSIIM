@@ -42,11 +42,13 @@ month_time_df, monthly_volume = monthly_inflow_avg(time_df, q_array)
 sy_dates_df, sy_array = read_soil_data(filenames_soil)
 
 # Calculate monthly concentration, for date range of discharge data:
-total_concentration_array = calculate_concentration(sy_array, monthly_volume, sy_dates_df, month_time_df)
+total_concentration_array, trimmed_sy_dates = calculate_concentration(sy_array, monthly_volume, sy_dates_df,
+                                                                      month_time_df)
 
-# SEPARATE MONTHLY CONCENTRATION FOR THE 3 INFLOW GRAIN SIZE FRACTIONS, EQUALLY
+# Separate monthly concentration for the 3 inflow grain size fractions (equally) for each sub-catchment
+timei_concent_array = build_concentration_timei(total_concentration_array, trimmed_sy_dates, time_df)
 
-# CALCULATE TIME IN SECONDS, TO A LIST
+# Time steps in seconds
 seconds_array = time_to_seconds(time_df)
 # CONSTANTS FOR 'I' PART OF TIMEI
 x=1

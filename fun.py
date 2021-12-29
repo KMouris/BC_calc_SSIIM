@@ -247,7 +247,7 @@ def calculate_concentration(sy_array, monthly_vol_array, sy_dates, vol_dates):
     :param vol_dates: series, with dates considered in the discharge data, and which will be used in the model
 
     :return: np.array, with monthly volume concentration for each sub-catchment, for the time range in the discharge
-    analysis.
+    analysis, AND df, datetime index with trimmed dates (months) included in simulation.
     """
     # Filter soil yield data for the months in the discharge data:
     df_total = pd.DataFrame(data=sy_array, index=sy_dates)
@@ -255,10 +255,51 @@ def calculate_concentration(sy_array, monthly_vol_array, sy_dates, vol_dates):
 
     # Extract trimmed Sy data to array (ton/month)
     trimmed_sy_array = np.array(df_trim)
+    trimmed_monthly_dates = df_trim.index
 
     # Calculate monthly mass concentration (kg/m3):
     mass_concent = np.divide(trimmed_sy_array, monthly_vol_array) * 1000
     # Calculate volume concentration (m3/m3)
     vol_concent = np.divide(mass_concent, soil_density)
 
-    return vol_concent
+    return vol_concent, trimmed_monthly_dates
+
+
+def build_concentration_timei(total_concentration, df_month, df_simulation_time):
+    """
+    Function build the timei file part with concentration values. There must be 4 entries per sub-catchment (with a
+    total of 4 subcatchments): 1st is always 0 and the other 3 are 1/3 of the total monthly volume concentration.
+    It first calculates 1/3 of the monthly volume concentration for each sub-catchment, and it then fills the concent.
+    for each time interval in the simulation, by looping through each month in the simulation time, and then checking
+    the month in each simulation time step (in order) and assigning the corresponding concentrations.
+
+    Args:
+    -----------------------------------------------
+    :param total_concentration: np.array, with monthly volume concentrations for each sub-catchment (tx4 size)
+    :param df_month: df, time series with each month for the volume concentration data (tx1)
+    :param df_simulation_time: df, time series with each time interval in the final simulation (ix1, i>t)
+
+    :return: np.array (concent_grain_fractions) with concentration values for each grain size fraction, and each
+    sub-catchment for the final timei file (size ix16).
+    """
+    # Divide each volume concentration equally into 3 grain sizes:
+    gs_concentration = total_concentration / 3
+
+    concent_grain_fractions = np.full((df_simulation_time.shape[0], 4*4), 0.0)
+    start_value = 0
+    for m, month in enumerate(df_month):  # Loop through each month
+        for i in range(start_value, df_simulation_time.shape[0]):  # Loop through each simulation time step
+            interval = df_simulation_time[i]
+            if month.month == interval.month and month.year == interval.year:
+                pass
+            else:
+                # When month ends, fill all time steps in that month in the results array
+                concent_grain_fractions[start_value:i, 1:4] = gs_concentration[m, 0]   # Devoll
+                concent_grain_fractions[start_value:i, 5:8] = gs_concentration[m, 1]   # Holta
+                concent_grain_fractions[start_value:i, 9:12] = gs_concentration[m, 2]  # Zalli
+                concent_grain_fractions[start_value:i, 13:] = gs_concentration[m, 3]   # Skebices
+
+                start_value = i  # To start in in next month, and avoid looping through all time steps
+                break
+    return concent_grain_fractions
+
