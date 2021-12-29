@@ -8,6 +8,9 @@ https://github.com/KMouris/Sediment_Load_Calculation.
 
 from fun import *
 
+# Create results folder
+if not os.path.exists(resuls_folder):
+    os.makedirs(resuls_folder)
 
 # READ INPUT FILES ---------------------------------------------------------------------------------------------
 # Read SY data:
@@ -30,7 +33,7 @@ if time_interval != 0:
     resample_time(time_df, q_array, time_interval)
 
 # Calculate outflows and save inflows and outflows to array
-total_flows = calculate_outflows_constant_wl(q_array, turbine_capacity)
+timei_total_flows = calculate_outflows_constant_wl(q_array, turbine_capacity)
 
 # ADD 3 ZEROS AT THE END OF THE TOTAL FLOWS (always) AND A 'Q' AT THE BEGINNING IN FINAL DF
 
@@ -49,10 +52,13 @@ total_concentration_array, trimmed_sy_dates = calculate_concentration(sy_array, 
 timei_concent_array = build_concentration_timei(total_concentration_array, trimmed_sy_dates, time_df)
 
 # upstream and downstream WL data for timei file
-us_ds_array = upstream_downstream_data(upstream_wl, downstream_wl, time_df)
+timei_us_ds_array = upstream_downstream_data(upstream_wl, downstream_wl, time_df)
 
 # Time steps in seconds
-seconds_array = time_to_seconds(time_df)
-# CONSTANTS FOR 'I' PART OF TIMEI
+seconds_df = time_to_seconds(time_df)
+
+# Build TIMEI file
+build_timei_file(timei_us_ds_array, timei_concent_array, timei_total_flows, seconds_df)
+
 x=1
 

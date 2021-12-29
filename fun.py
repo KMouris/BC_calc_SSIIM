@@ -334,3 +334,54 @@ def upstream_downstream_data(up, down, df_time):
 
     return us_ds_array
 
+
+def build_timei_file(up_down_array, concent_array, flow_array, df_time):
+    """
+    Function generates the final timei file and saves it to a data frame variable. It then saves the timei file as a
+    tab delimited text file (with no extension), called 'timei'.
+    - Comprised of the "I" and "Q" data sets.
+    - The "I" data set has the following format: [I, Time (s), 0, 0, upstream water level(m), downstream water
+    level (m), conc. Devoll grain fraction 1 (m³/m³), conc. Devoll grain fraction 2, conc. Devoll grain fraction 3,
+    conc. Devoll grain fraction 4 …] (ix22)
+    - The "Q" data set has the following format: [Q Time(s)	Devoll [m³/s]	Holta [m³/s]	Zalli [m³/s]
+    Skebices [m³/s]	Turbine inlet [m³/s]    Spillway [m³/s] 0   0   0]
+
+    Args:
+    --------------------------
+    :param up_down_array: np.array, with upstream and downstream data (ix4) - from 'upstream_downstream_data' function
+    :param concent_array: np.array, with volume concentration per grain size fractions and subcatchment (ix16) - from
+    'build_concentration_timei' function
+    :param flow_array: np.array, with inflow/outflow data (ix6) - from 'timei_total_flows' function
+    :param df_time: df, time series in seconds, for each time step in final simulation
+
+    :return: saves df (timei_df) with final boundary condition data for timei file
+    """
+    seconds_array = np.array(df_time).astype(int)
+
+    # Letter df:
+    i_letter_df = pd.DataFrame(data=np.full((seconds_array.shape[0], 1), "I"), columns=['Letter'])
+    q_letter_df = pd.DataFrame(data=np.full((seconds_array.shape[0], 1), "Q"), columns=['Letter'])
+
+    # time df
+    time_df = pd.DataFrame(data=seconds_array, columns=['time'])
+
+    # Combine upstream/downstrean data with concentrations for I data
+    i_concat_array = np.concatenate((up_down_array, concent_array), axis=1)
+    i_concat_df = pd.DataFrame(data=i_concat_array, columns=np.arange(1, i_concat_array.shape[1]+1))
+
+    # Add 3 zeros at the end of flow data for Q data
+    q_concat_array = np.concatenate((flow_array, np.full((seconds_array.shape[0], 3), 0.0)), axis=1)
+    q_concat_df = pd.DataFrame(data=q_concat_array, columns=np.arange(1, q_concat_array.shape[1]+1))
+
+    # Final I and Q df
+    i_df = pd.concat([i_letter_df, time_df, i_concat_df], axis=1)
+    q_df = pd.concat([q_letter_df, time_df, q_concat_df], axis=1)
+
+    # TIMEI df format
+    timei_df = pd.concat([i_df, q_df], axis=0)
+
+    # Save timei
+    timei_df.to_csv(os.path.join(resuls_folder, "timei"), header=False, index=False, sep='\t', na_rep="")
+
+
+
