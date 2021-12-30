@@ -31,11 +31,8 @@ q_array = extract_discharge(q_df)
 if time_interval != 0:
     time_df, q_array = resample_time(time_df, q_array, time_interval)
 
-
 # Calculate outflows and save inflows and outflows to array
 timei_total_flows = calculate_outflows_constant_wl(q_array, turbine_capacity)
-
-# ADD 3 ZEROS AT THE END OF THE TOTAL FLOWS (always) AND A 'Q' AT THE BEGINNING IN FINAL DF
 
 # GET CONCENTRATION DATA ----------------------------------------------------------------------------------------
 # Calculate monthly volume form inflow data(for concentration data)
