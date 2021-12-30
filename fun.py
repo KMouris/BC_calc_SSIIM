@@ -17,6 +17,8 @@ def modify_time_interval(df_time, flow_array, interval):
     frame. The original dates are read in order, and therefore the 2nd loop goes through all intervals within the new
     time interval, and averages the flow data.
 
+    NOT USED: Can be used as a guide if something other than averaging for the given time period is to be done
+
     Args:
     ----------------------------
     :param df_time: data frame, with original time intervals, in datetime format
@@ -88,7 +90,7 @@ def resample_time(df_time, flow_array, interval):
 
     df_total = pd.DataFrame(data=flow_array, index=df_time)
 
-    if interval == 1:   # Day
+    if interval == 1:    # Day
         freq = "D"
     elif interval == 2:  # Month
         freq = "MS"

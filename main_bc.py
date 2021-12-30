@@ -29,8 +29,8 @@ q_array = extract_discharge(q_df)
 
 # Option to convert to daily or monthly frequency
 if time_interval != 0:
-    time_df, q_array = modify_time_interval(time_df, q_array, time_interval)
-    resample_time(time_df, q_array, time_interval)
+    time_df, q_array = resample_time(time_df, q_array, time_interval)
+
 
 # Calculate outflows and save inflows and outflows to array
 timei_total_flows = calculate_outflows_constant_wl(q_array, turbine_capacity)
