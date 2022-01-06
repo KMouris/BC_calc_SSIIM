@@ -77,11 +77,12 @@ def resample_time(df_time, flow_array, interval):
 
     Args:
     ----------------------------
-    :param df_time: data frame, with original time intervals, in datetime format
+    :param df_time: data frame Datetime Index or time Series, with original time intervals
     :param flow_array: np.array, with inflow data
     :param interval: 1, if re-sample is to daily, 2 if re-sample is to monthly
 
-    :return: data frame, with new time intervals, and np.array, with the flow data averaged for the new time interval.
+    :return: DateTime index, with new time intervals, and np.array, with the flow data averaged for the new
+    time interval.
 
     Note: Function currently only re-samples to daily and monthly data, and averages the flow data for the new interval.
     If the user wants a different frequency, include options for the wanted frequency
@@ -108,14 +109,19 @@ def resample_time(df_time, flow_array, interval):
 def time_to_seconds(df_time):
     """
     Function calculates the seconds between the beginning of the simulation and each time interval and then transforms
-    it to seconds.
+    the differences to seconds.
 
     Args:
     ------------------------------------
-    :param df_time: df, time series with each entry being a time interval for the simulation
+    :param df_time: DataFrame Series or DatetimeIndex, time series with each entry being a time interval for the
+    simulation.
 
     :return: df, time series in seconds.
+
+    Note: if df_time is a DatetimeIndex type, it is transformed to Series type.
     """
+    if isinstance(df_time, pd.DatetimeIndex):  # if Datetime index, change to Series
+        df_time = df_time.to_series()
     seconds = (df_time - df_time[0]).dt.total_seconds()
     return seconds
 
@@ -178,7 +184,7 @@ def monthly_inflow_avg(df_time, flow_array):
 
     Args:
     ----------------------------------------
-    :param df_time: data frame, with original time intervals, in datetime format
+    :param df_time: data frame DatetimeIndex or time Series, with original time intervals
     :param flow_array: np.array, with inflow data
 
     :return: data frame, with new time intervals, and np.array, with the monthly inflow volume for each month in the
