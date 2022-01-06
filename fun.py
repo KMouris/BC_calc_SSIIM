@@ -200,19 +200,20 @@ def monthly_inflow_avg(df_time, flow_array):
     return month_dates, month_volume
 
 
-# Soil yield/concentration functions
-def read_soil_data(catchment_list):
+# Sediment yield/concentration functions
+def read_sediment_data(catchment_list):
     """
-    Functions loops through each .txt file in the input soil data folder and extracts the total soil yield (ton/month)
-    for each sub-catchment, as well as the date data. It then copies the SY data to an array, which must be in the
-    following sub-catchment order: [Devoll, Holta, Zalli and Skebices], or in the order dictated by the variable
+    Functions loops through each .txt file in the input sediment data folder and extracts the total sediment yield
+    (ton/month) for each sub-catchment, as well as the date data. It then copies the SY data to an array, which must be
+    in the following sub-catchment order: [Devoll, Holta, Zalli and Skebices], or in the order dictated by the variable
     'catchment_order' in config.py.
 
     Args:
     ----------------------------------
-    :param catchment_list: list of strings, with the path to each .txt file in the input soil folder
+    :param catchment_list: list of strings, with the path to each .txt file in the input sediment folder
+
     :return: data frame, with monthly time intervals, corresponding to each SY data, and np.array, with the monthly
-    total soil yield for each subcatchment (in each column), and for each time interval (row)
+    total sediment yield for each sub-catchment (in each column), and for each time interval (row)
 
     Note: the name of the catchment, as it appears in the variable 'catchment_order', must be in the .txt file
     corresponding to that sub-catchment.
@@ -245,7 +246,8 @@ def calculate_concentration(sy_array, monthly_vol_array, sy_dates, vol_dates):
     1. Trim the SY data to match the months considered in the discharge data
     2. Divide the SY data (ton/month) by the total monthly volume (m3/month), on a sub-catchment basis (column-wise)
     and then multiply by 1000 kg/ton to get the mass concentration (kg/m3)
-    3. Divide the mass concentration (kg/m3) by the soil density (kg/m3) to get the monthly volume concentration (m3/m3)
+    3. Divide the mass concentration (kg/m3) by the sediment density (kg/m3) to get the monthly volume concentration
+    (m3/m3)
 
     Args:
     --------------------------------------------------------------------
@@ -257,7 +259,7 @@ def calculate_concentration(sy_array, monthly_vol_array, sy_dates, vol_dates):
     :return: np.array, with monthly volume concentration for each sub-catchment, for the time range in the discharge
     analysis, AND df, datetime index with trimmed dates (months) included in simulation.
     """
-    # Filter soil yield data for the months in the discharge data:
+    # Filter sediment yield data for the months in the discharge data:
     df_total = pd.DataFrame(data=sy_array, index=sy_dates)
     df_trim = df_total.loc[vol_dates[0]:vol_dates[-1]]
 
@@ -268,7 +270,7 @@ def calculate_concentration(sy_array, monthly_vol_array, sy_dates, vol_dates):
     # Calculate monthly mass concentration (kg/m3):
     mass_concent = np.divide(trimmed_sy_array, monthly_vol_array) * 1000
     # Calculate volume concentration (m3/m3)
-    vol_concent = np.divide(mass_concent, soil_density)
+    vol_concent = np.divide(mass_concent, sediment_density)
 
     return vol_concent, trimmed_monthly_dates
 

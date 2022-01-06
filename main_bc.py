@@ -1,6 +1,6 @@
 """
 Program generates the boundary conditions for the SSIIMM2 numerical software, based on discharge data from WaSim
-software and soil yield calculations based on the following program:
+software and sediment yield calculations based on the following program:
 
 Mouris, K., Morales Oreamuno, M.F., Schwindt, S., 2021a. Sediment_Load_Calculation.
 https://github.com/KMouris/Sediment_Load_Calculation.
@@ -14,7 +14,7 @@ if not os.path.exists(resuls_folder):
 
 # READ INPUT FILES ---------------------------------------------------------------------------------------------
 # Read SY data:
-filenames_soil = glob.glob(sy_folder + "/*.txt")
+filenames_sy = glob.glob(sy_folder + "/*.txt")
 
 # read .b16 file with discharge data to df
 q_df = pd.read_csv(q_path, sep='\t', header=0, skiprows=[1, 2])
@@ -38,8 +38,8 @@ timei_total_flows = calculate_outflows_constant_wl(q_array, turbine_capacity)
 # Calculate monthly volume form inflow data(for concentration data)
 month_time_df, monthly_volume = monthly_inflow_avg(time_df, q_array)
 
-# Read total soil yield data and corresponding dates
-sy_dates_df, sy_array = read_soil_data(filenames_soil)
+# Read total sediment yield data and corresponding dates
+sy_dates_df, sy_array = read_sediment_data(filenames_sy)
 
 # Calculate monthly concentration, for date range of discharge data:
 total_concentration_array, trimmed_sy_dates = calculate_concentration(sy_array, monthly_volume, sy_dates_df,
