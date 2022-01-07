@@ -43,3 +43,7 @@ The WaSim results must be in .b16 file format, and must contain the following in
 ### Total sediment yield data format
 
 There must be a .txt file with the sediment loss and sediment yield data for each sub-catchment to consider, and the file name must contain the name of the sub-catchment as stated in the "catchment_order" variable. The .txt file is the result from the 'Sediment_Loacd_Calculation" codes [https://github.com/KMouris/Sediment_Load_Calculation], where the first column's name is "Date", and has the date in YYYYMM format, and the column with the totalsediment yield for the given sub-catchment is found under the columns with name "Total Sediment Yield [ton/month]". 
+
+
+## Code Diagram
+![](Images/Diagram_1.jpg)
