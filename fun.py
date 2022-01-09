@@ -176,6 +176,94 @@ def calculate_outflows_constant_wl(inflow_array, t_capacity):
     return total_flow
 
 
+def calculate_outflows_seasonal_wl(inflow_array, df_time, sc_path):
+    """
+    This function is an example of how one could calculate outflow based on water level in the reservoir, using the
+    Runge-Kutta method to do the hydrological routing. It needs an initial water level, as well as an equation or a
+    discharge curve to associate outflow with water height. It calculates the new water level in each time step and,
+    with this water level, it calculates the outflow for the next time step (t+1) based on the data from the current
+    time step (t).
+    NOTE: For this example, the Q vs h relationship is done using the orifice equation, using a randomly
+    chosen diameter and maximum water level, calculated with a function 'alculate_outflow_rk' which does not necessarily
+    fit the case. This MUST be modified to fit the real situation and the results should be double-checked, since this
+    example is for demonstration purposes only.
+
+    Args:
+    ---------------------------------------------
+    :param inflow_array: np.array, with the inflow data for each sub-catchment (in this case 4). Each column is a
+    different sub-catchment and each row corresponds to a different time interval.
+    :param df_time: Data Frame (time Series or DatetimeIndex), with time intervals for the final simulation
+    :param sc_path: path where the storage curve is located (in a .txt, tab-delimited file with 2 columns)
+
+    :return:np.array with [inflows (4), turbine outflow, spillway outflow], in that order.
+    """
+    # save outflow data:
+    outflow_array = np.full((inflow_array.shape[0], 2), 0.0)
+    h_array = np.full((inflow_array.shape[0], 1), 0.0)
+
+    # time step:
+    dt = (df_time[1] - df_time[0]).total_seconds()
+
+    # Total inflow: sum of all inflows
+    total_inflow = np.sum(inflow_array, axis=1)
+
+    # Read storage_curve:
+    storage_curve = np.array(pd.read_csv(sc_path, sep='\t'))
+    time_seconds = np.array(time_to_seconds(df_time))
+
+    # Interpolate initial values
+    outflow_array[0, :] = calculate_outflow_rk(initial_wl)
+
+    # Runge-Kutta method
+    h_t = initial_wl
+    for t in range(0, df_time.shape[0]-1):
+        # k1 --------------------------------------------------------------------------------------------------------
+        inflow_1 = interpolate_value(time_seconds[t], time_seconds, total_inflow)  # inflow t1
+
+        # outflow as a function of water level (h_t): create function to calculate outflow, either by an equation (e.g.
+        # for an orifice) or interpolating from a outflow vs wl curve (.txt file) EXAMPLE:
+        outflow_1 = np.sum(calculate_outflow_rk(h_t))  # Outflow for the t1 time step
+
+        # To calculate the area, calculate the volume for 'h', and then divide by 'h' (approximation)
+        a_1 = interpolate_value(h_t, storage_curve[:, 0], storage_curve[:, 1])/h_t
+        k1 = (inflow_1 - outflow_1)/a_1
+
+        # k2 ---------------------------------------------------------------------------------------------------
+        # Repeat procedure from before
+        in_2 = interpolate_value(time_seconds[t] + dt/2, time_seconds, total_inflow)
+        out_2 = np.sum(calculate_outflow_rk(h_t + (k1*dt/2)))
+        a_2 = interpolate_value(h_t + (k1*dt/2), storage_curve[:, 0], storage_curve[:, 1])/(h_t + (k1*dt/2))
+        k2 = (in_2 - out_2)/a_2
+
+        # k3 ---------------------------------------------------------------------------------------------------
+        # Repeat procedure from before
+        in_3 = interpolate_value(time_seconds[t] + dt / 2, time_seconds, total_inflow)
+        out_3 = np.sum(calculate_outflow_rk(h_t + (k2*dt / 2)))
+        a_3 = interpolate_value(h_t + (k2 * dt/2), storage_curve[:, 0], storage_curve[:, 1]) / (h_t + (k2*dt/2))
+        k3 = (in_3 - out_3) / a_3
+
+        # k4 ---------------------------------------------------------------------------------------------------
+        # Repeat procedure from before
+        in_4 = interpolate_value(time_seconds[t] + dt, time_seconds, total_inflow)
+        out_4 = np.sum(calculate_outflow_rk(h_t + (k3*dt)))
+        a_4 = interpolate_value(h_t + (k3 * dt), storage_curve[:, 0], storage_curve[:, 1]) / (h_t + (k3*dt))
+        k4 = k3*(in_4 - out_4) / a_4
+
+        # h(t+1)
+        h_t_1 = h_t + (k1 + 2*k2 + 2*k3 + k4)*dt / 6
+        outflow_array[t+1, :] = calculate_outflow_rk(h_t_1)
+
+        # For next iteration, if new h is higher than max water level, the excess water is removed, and the water level
+        # is the max water level
+        if h_t_1 > h_max:
+            h_t_1 = h_max
+        h_array[t+1, 0] = h_t_1
+
+    # Total flow format:
+    total_flow = np.c_[inflow_array, outflow_array]
+    return total_flow
+
+
 def monthly_inflow_avg(df_time, flow_array):
     """
     Function calculates the monthly inflow volume, by averaging the total inflow (for each sub-catchment individually)
@@ -394,4 +482,57 @@ def build_timei_file(up_down_array, concent_array, flow_array, df_time):
     timei_df.to_csv(os.path.join(resuls_folder, "timei"), header=False, index=False, sep='\t', na_rep="")
 
 
+# Runge-Kutta method
+def interpolate_value(value, x, y):
+    """
+    Function interpolates between two values from a np array. Currently, only a linear interpolation is done, but future
+    modifications could include higher-order interpolations.
+
+    Args:
+    ----------------------------
+    :param value: x value to interpolate for
+    :param x: np.array (1D) with x values
+    :param y: np.array (1D) with y values
+
+    :return: interpolated y value, corresponding to the input x value
+    """
+    # Linear interpolation
+    int_value = np.interp(value, x, y)
+    return int_value
+
+
+def calculate_outflow_rk(h):
+    """
+    Example of how to calculate outflow based on an outflow origice, using the orifice equation
+    [q=pi/4*Cd*d^2*sqrt(2*g*h)], considering a diameter of 2m and an orifice coefficient Cd of 0.611. Fow flows above
+    the one calculated for 173 m, the spillway begins to work such that the inflow equals the outflow, and the intake is
+    located at a height of 161, such that below said height, no water leaves through the intake.
+
+    Args
+    ------------
+    :param h: water level
+
+    :return: np.array, with two values: the turbine outflow and the spillway outflow
+
+    NOTE: This is just an example and thus must be modified to suit the needs of the project, e.g. using a
+    stage-discharge curve or another equation, with different (appropriate) parameters
+
+    NOTE: Instead of a maximum turbine capacity, one could set the maximum water level, which determines the max
+    outflow through the turbine, and if h > h_max, then the extra height (h-h_max) is used to calculate the water
+    through the spillway, for example. The h_max can be an input to the function, or just read from config directly
+    """
+    d = 1.15  # Diameter
+    if h < 161:
+        q_turbine = 0
+        q_spillway = 0
+    elif 161 <= h <= h_max:
+        q_turbine = (math.pi/4)*0.611*math.pow(d, 2)*math.sqrt(2*9.81*h)
+        q_spillway = 0
+    else:
+        q_turbine = (math.pi/4)*0.611*math.pow(d, 2)*math.sqrt(2*9.81*174)
+
+        h_above_spillway = h - h_max
+        q_spillway = 0  # Use equation for spillway, using h above spillway (Poleni equation)
+
+    return np.array([q_turbine, q_spillway])
 

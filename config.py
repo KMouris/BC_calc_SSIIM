@@ -14,6 +14,7 @@ except ModuleNotFoundError as b:
 try:
     import numpy as np
     import pandas as pd
+    import math
 
 except ModuleNotFoundError as e:
     print('ModuleNotFoundError: Missing fundamental packages (required: numpy, pandas')
@@ -47,6 +48,18 @@ catchment_order: list of strings, with the names of the sub-catchments to consid
 considered
 
 sediment_density: float, sediment density to be used to calculate monthly volume concentration (m3/m3)
+
+FOR SEASONAL OUTFLOW: to consider a seasonal outflow, based on water level
+seasonal_wl: boolean, is False, only the 'turbine_capacity' variable would be needed, and it considers a constant water
+level, if True, it considers a seasonal outflow, in which case the following variables are needed: 
+    storage_curve_path: str, path (.txt) where the reservoir storage curve is saved, in a .txt, tab-delimited file, 
+    with 2 columns: 1: water level, 2: storage volume
+    initial_wl: float, initial water level (at the beginning of the simulation)
+    h_max = float, maximum allowable water level (above this, the spillway begins to work)
+
+    NOTE: this configuration is a suggestion, and any method, with any input data could be used, to consider a seasonal
+    outflow. 
+
 """
 q_path = r'Y:\Abt1\hiwi\Oreamuno\Tasks\01_BC_Calculation\Example_Files\WaSim\y_opt.b16'
 sy_folder = os.path.abspath(r'../Input/Soil_Input')
@@ -62,3 +75,9 @@ downstream_wl = 175
 
 catchment_order = ['Devoll', 'Holta', 'Zalli', 'Skebices']
 sediment_density = 2650
+
+# For seasonal water level:
+seasonal_wl = True
+storage_curve_path = os.path.abspath(r'../Input/storage_curve_2019.txt')
+initial_wl = 171.3
+h_max = 175

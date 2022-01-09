@@ -32,7 +32,10 @@ if time_interval != 0:
     time_df, q_array = resample_time(time_df, q_array, time_interval)
 
 # Calculate outflows and save inflows and outflows to array
-timei_total_flows = calculate_outflows_constant_wl(q_array, turbine_capacity)
+if not seasonal_wl:  # Constant water level
+    timei_total_flows = calculate_outflows_constant_wl(q_array, turbine_capacity)
+else:  # Seasonal water level, considering hydrological routing and outflow(h, t)
+    timei_total_flows = calculate_outflows_seasonal_wl(q_array, turbine_capacity, time_df, storage_curve_path)
 
 # GET CONCENTRATION DATA ----------------------------------------------------------------------------------------
 # Calculate monthly volume form inflow data(for concentration data)
@@ -56,6 +59,7 @@ seconds_df = time_to_seconds(time_df)
 
 # Build TIMEI file
 build_timei_file(timei_us_ds_array, timei_concent_array, timei_total_flows, seconds_df)
+
 
 x=1
 
