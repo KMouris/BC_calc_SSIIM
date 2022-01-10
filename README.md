@@ -11,17 +11,17 @@ In addition, the following standard Python libraries are used: *glob*, *os*, *sy
 
 The below-listed input arguments and data have to be provided to run the algorithm. The input arguments are variables that can be set in `config.py`.
 
-| Input argument | Type | Description |
-|----------------|------|-------------|
-|`q_path`| *string* |File path (PATH/name.b16) where the results from the WaSim results are stored (see below for format)|
-|`sy_folder`| *string* | Folder path (PATH/folder name) where the .txt files with the total sediment yield data for each sub-catchment is found|
-|`turbine_capacity`| *float* | Maximum flow (q) that can pass through the turbines |
+| Input argument | Type | Description                                                                                                                      |
+|----------------|------|----------------------------------------------------------------------------------------------------------------------------------|
+|`q_path`| *string* | File path (PATH/name.b16) where the results from the WaSim results are stored (see below for format)                             |
+|`sy_folder`| *string* | Folder path (PATH/folder name) where the .txt files with the total sediment yield data for each sub-catchment is found           |
+|`turbine_capacity`| *float* | Maximum flow (q) that can pass through the turbines                                                                              |
 |`time_interval`[^1]| *integer* | Value that indicates the time frequency to use: 0 to keep the input data frequency, 1 for a daily frequency, 2 for a monthly frequency |
-|`upstream_wl`[^2]| *float* | Upstream water level to consider in the simulation (0 or a max of 171) |
-|`downstream_wl`[^2]| *float* | Downstreamstream water level to consider in the simulation |
-|`catchment_order`| *list of strings* | Names of sub-catchments to consider, and the .txt files for each subcatchment must have the catchment name in the file name|
-|`sediment_density`| *float* | Sediment density (kg/m3) to consider|
-|`results_path`| *string* |Path of the main result folder|
+|`upstream_wl`[^2]| *float* | Upstream water level to consider in the simulation (0 if a upstream WL is not needed as BC                                       |
+|`downstream_wl`[^2]| *float* | Downstream water level to consider in the simulation                                                                             |
+|`catchment_order`| *list of strings* | Names of sub-catchments to consider, and the .txt files for each subcatchment must have the catchment name in the file name      |
+|`sediment_density`| *float* | Sediment density (kg/m3) to consider                                                                                             |
+|`results_path`| *string* | Path of the main result folder                                                                                                   |
 
 [^1]:more frequencies can be added by the user
 [^2]: These water levels are taken as constant for all time steps. If user wants to use time-dependent water levels, the code must be modified. 
