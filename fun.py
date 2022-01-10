@@ -1,6 +1,6 @@
 """
 Module contains functions to read and calculate discharge (inflow/outflow) and volume concentrations for the generation
-of the input boundary condition file for SSIIMM2
+of the input boundary condition file for SSIIM2
 
 """
 from config import *
@@ -19,8 +19,6 @@ def modify_time_interval(df_time, flow_array, interval):
 
     NOT USED: Can be used as a guide if something other than averaging for the given time period is to be done
 
-    Args:
-    ----------------------------
     :param df_time: data frame, with original time intervals, in datetime format
     :param flow_array: np.array, with inflow data
     :param interval: 1, if re-sample is to daily, 2 if re-sample is to monthly
@@ -37,10 +35,10 @@ def modify_time_interval(df_time, flow_array, interval):
 
     if interval == 1:  # Daily (frequency is 'D')
         resampled_dates = pd.to_datetime(pd.date_range(start_date, end_date, freq='D').strftime("%Y%m%d").tolist(),
-                                   format="%Y%m%d")
+                                         format="%Y%m%d")
         resampled_flow = np.full((len(resampled_dates), flow_array.shape[1]), 0.0)
         initial = 0
-        for d, date in enumerate(resampled_dates):            # Loop through each day to consider
+        for d, date in enumerate(resampled_dates):  # Loop through each day to consider
             for i in range(initial, df_time.shape[0]):  # Loop through the original flow/date data
                 if date.day != df_time[i].day:
                     resampled_flow[d, :] = np.mean(flow_array[initial:i, :], axis=0)
@@ -49,7 +47,7 @@ def modify_time_interval(df_time, flow_array, interval):
                     break
     elif interval == 2:  # monthly (frequency is "MS")
         resampled_dates = pd.to_datetime(pd.date_range(start_date, end_date, freq='MS').strftime("%Y%m%d").tolist(),
-                                   format="%Y%m%d")
+                                         format="%Y%m%d")
         resampled_flow = np.full((len(resampled_dates), flow_array.shape[1]), 0.0)
         initial = 0
         for d, date in enumerate(resampled_dates):  # Loop through each day to consider
@@ -75,8 +73,6 @@ def resample_time(df_time, flow_array, interval):
     It first converts the flow array to a data frame, with the original time data as index. It then uses the df.resample
     tool to resample the data to a given frequency, by averaging the values.
 
-    Args:
-    ----------------------------
     :param df_time: data frame Datetime Index or time Series, with original time intervals
     :param flow_array: np.array, with inflow data
     :param interval: 1, if re-sample is to daily, 2 if re-sample is to monthly
@@ -91,7 +87,7 @@ def resample_time(df_time, flow_array, interval):
 
     df_total = pd.DataFrame(data=flow_array, index=df_time)
 
-    if interval == 1:    # Day
+    if interval == 1:  # Day
         freq = "D"
     elif interval == 2:  # Month
         freq = "MS"
@@ -111,8 +107,6 @@ def time_to_seconds(df_time):
     Function calculates the seconds between the beginning of the simulation and each time interval and then transforms
     the differences to seconds.
 
-    Args:
-    ------------------------------------
     :param df_time: DataFrame Series or DatetimeIndex, time series with each entry being a time interval for the
     simulation.
 
@@ -134,18 +128,16 @@ def extract_discharge(input_df):
     {6, 7, 8, 9}) corresponds to the catchments {Zalli, Skebices, Holta, Devoll}. The output file needs the following
     sub-catchment order: {Devoll, Holta, Zalli and Skebices}
 
-    Args:
-    ----------------------------------------------
-    :param input_df: data frame, with the original input data from the .b16 file
+    :param input_df:  data frame, with the original input data from the .b16 file
 
-    :return: np array, with the discharges for the [Devoll, Holta, Zalli and Skebices] sub catchments, in that order
+    :return: np array, with the discharges for the [Devoll, Holta, Zalli and Skebices] subcatchments, in that order
     """
     output_q = np.full((input_df.shape[0], 4), 0.0)
 
-    output_q[:, 0] = input_df['5']   # Devoll
-    output_q[:, 1] = input_df['4']   # Holta
-    output_q[:, 2] = input_df['2']   # Zalli
-    output_q[:, 3] = input_df['3']   # Skebices
+    output_q[:, 0] = input_df['5']  # Devoll
+    output_q[:, 1] = input_df['4']  # Holta
+    output_q[:, 2] = input_df['2']  # Zalli
+    output_q[:, 3] = input_df['3']  # Skebices
 
     return output_q
 
@@ -157,8 +149,6 @@ def calculate_outflows_constant_wl(inflow_array, t_capacity):
     total inflow is calculated as the sum of the inflows from each sub-catchment (row-wise sum), and the outflow is
     calculated for each time interval (each row).
 
-    Args:
-    --------------------------------------------
     :param inflow_array: np.array, with the inflow data for each sub-catchment (in this case 4). Each column is a
     different sub-catchment and each row corresponds to a different time interval.
     :param t_capacity: float, turbine capacity
@@ -182,15 +172,12 @@ def monthly_inflow_avg(df_time, flow_array):
     for a given month to get average monthly inflow (m3/s) for each, and then multiplying it by 3600 * 24 * days in
     the corresponding month to get total volume (m3) for each sub-catchment.
 
-    Args:
-    ----------------------------------------
     :param df_time: data frame DatetimeIndex or time Series, with original time intervals
     :param flow_array: np.array, with inflow data
 
     :return: data frame, with new time intervals, and np.array, with the monthly inflow volume for each month in the
     analysis time range.
     """
-    # total_inflow = np.sum(flow_array, axis=1)
     month_dates, month_flow_total = resample_time(df_time, flow_array, interval=2)
 
     days_in_month = np.array(month_dates.days_in_month).reshape(month_flow_total.shape[0], 1)
@@ -208,8 +195,6 @@ def read_sediment_data(catchment_list):
     in the following sub-catchment order: [Devoll, Holta, Zalli and Skebices], or in the order dictated by the variable
     'catchment_order' in config.py.
 
-    Args:
-    ----------------------------------
     :param catchment_list: list of strings, with the path to each .txt file in the input sediment folder
 
     :return: data frame, with monthly time intervals, corresponding to each SY data, and np.array, with the monthly
@@ -235,7 +220,7 @@ def read_sediment_data(catchment_list):
                 sy_array[:, c] = temp_array
                 break
             else:
-                if c == len(catchment_order)-1:
+                if c == len(catchment_order) - 1:
                     print(f"{catchment_list[i]} has no corresponding catchment in 'catchment_order' variable.")
     return date_df, sy_array
 
@@ -249,8 +234,6 @@ def calculate_concentration(sy_array, monthly_vol_array, sy_dates, vol_dates):
     3. Divide the mass concentration (kg/m3) by the sediment density (kg/m3) to get the monthly volume concentration
     (m3/m3)
 
-    Args:
-    --------------------------------------------------------------------
     :param sy_array: np.array, with SY data (ton/month) for each sub-catchment
     :param monthly_vol_array: np.array, with the monthly volume data for each sub-catchment (m3/month)
     :param sy_dates: series, with dates considered in the SY data (each row is a different monthly interval)
@@ -278,13 +261,11 @@ def calculate_concentration(sy_array, monthly_vol_array, sy_dates, vol_dates):
 def build_concentration_timei(total_concentration, df_month, df_simulation_time):
     """
     Function build the timei file part with concentration values. There must be 4 entries per sub-catchment (with a
-    total of 4 subcatchments): 1st is always 0 and the other 3 are 1/3 of the total monthly volume concentration.
-    It first calculates 1/3 of the monthly volume concentration for each sub-catchment, and it then fills the concent.
-    for each time interval in the simulation, by looping through each month in the simulation time, and then checking
-    the month in each simulation time step (in order) and assigning the corresponding concentrations.
+    total of 4 subcatchments): 1st is always 0 and the other 3 are 1/3 of the total monthly volume concentration. It
+    first calculates 1/3 of the monthly volume concentration for each sub-catchment, and it then fills the
+    concentration for each time interval in the simulation, by looping through each month in the simulation time,
+    and then checking the month in each simulation time step (in order) and assigning the corresponding concentrations.
 
-    Args:
-    -----------------------------------------------
     :param total_concentration: np.array, with monthly volume concentrations for each sub-catchment (tx4 size)
     :param df_month: df, time series with each month for the volume concentration data (tx1)
     :param df_simulation_time: df, time series with each time interval in the final simulation (ix1, i>t)
@@ -295,7 +276,7 @@ def build_concentration_timei(total_concentration, df_month, df_simulation_time)
     # Divide each volume concentration equally into 3 grain sizes:
     gs_concentration = total_concentration / 3
 
-    concent_grain_fractions = np.full((df_simulation_time.shape[0], 4*4), 0.0)
+    concent_grain_fractions = np.full((df_simulation_time.shape[0], 4 * 4), 0.0)
     start_value = 0
     for m, month in enumerate(df_month):  # Loop through each month
         for i in range(start_value, df_simulation_time.shape[0]):  # Loop through each simulation time step
@@ -304,10 +285,10 @@ def build_concentration_timei(total_concentration, df_month, df_simulation_time)
                 pass
             else:
                 # When month ends, fill all time steps in that month in the results array
-                concent_grain_fractions[start_value:i, 1:4] = gs_concentration[m, 0]   # Devoll
-                concent_grain_fractions[start_value:i, 5:8] = gs_concentration[m, 1]   # Holta
+                concent_grain_fractions[start_value:i, 1:4] = gs_concentration[m, 0]  # Devoll
+                concent_grain_fractions[start_value:i, 5:8] = gs_concentration[m, 1]  # Holta
                 concent_grain_fractions[start_value:i, 9:12] = gs_concentration[m, 2]  # Zalli
-                concent_grain_fractions[start_value:i, 13:] = gs_concentration[m, 3]   # Skebices
+                concent_grain_fractions[start_value:i, 13:] = gs_concentration[m, 3]  # Skebices
 
                 start_value = i  # To start in in next month, and avoid looping through all time steps
                 break
@@ -322,8 +303,6 @@ def upstream_downstream_data(up, down, df_time):
     simulation time step.
     The order of columns is [upstream_discharge, downstream_discharge, upstream_wl, downstream_wl] or [0, 0, num, num]
 
-    Args
-    ---------------------------------
     :param up: float, with constant upstream water level (str, with path where .txt file with upstream WL data is)
     :param down: float, with constant downstream water level (str, with path where .txt file with downstream WL data is)
     :param df_time: df, time series with time steps in simulation
@@ -356,8 +335,6 @@ def build_timei_file(up_down_array, concent_array, flow_array, df_time):
     - The "Q" data set has the following format: [Q Time(s)	Devoll [m³/s]	Holta [m³/s]	Zalli [m³/s]
     Skebices [m³/s]	Turbine inlet [m³/s]    Spillway [m³/s] 0   0   0]
 
-    Args:
-    --------------------------
     :param up_down_array: np.array, with upstream and downstream data (ix4) - from 'upstream_downstream_data' function
     :param concent_array: np.array, with volume concentration per grain size fractions and subcatchment (ix16) - from
     'build_concentration_timei' function
@@ -375,13 +352,13 @@ def build_timei_file(up_down_array, concent_array, flow_array, df_time):
     # time df
     time_df = pd.DataFrame(data=seconds_array, columns=['time'])
 
-    # Combine upstream/downstrean data with concentrations for I data
+    # Combine upstream/downstream data with concentrations for I data
     i_concat_array = np.concatenate((up_down_array, concent_array), axis=1)
-    i_concat_df = pd.DataFrame(data=i_concat_array, columns=np.arange(1, i_concat_array.shape[1]+1))
+    i_concat_df = pd.DataFrame(data=i_concat_array, columns=np.arange(1, i_concat_array.shape[1] + 1))
 
     # Add 3 zeros at the end of flow data for Q data
     q_concat_array = np.concatenate((flow_array, np.full((seconds_array.shape[0], 3), 0.0)), axis=1)
-    q_concat_df = pd.DataFrame(data=q_concat_array, columns=np.arange(1, q_concat_array.shape[1]+1))
+    q_concat_df = pd.DataFrame(data=q_concat_array, columns=np.arange(1, q_concat_array.shape[1] + 1))
 
     # Final I and Q df
     i_df = pd.concat([i_letter_df, time_df, i_concat_df], axis=1)
@@ -391,7 +368,4 @@ def build_timei_file(up_down_array, concent_array, flow_array, df_time):
     timei_df = pd.concat([i_df, q_df], axis=0)
 
     # Save timei
-    timei_df.to_csv(os.path.join(resuls_folder, "timei"), header=False, index=False, sep='\t', na_rep="")
-
-
-
+    timei_df.to_csv(os.path.join(results_folder, "timei"), header=False, index=False, sep='\t', na_rep="")

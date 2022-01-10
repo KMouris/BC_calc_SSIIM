@@ -9,10 +9,10 @@ https://github.com/KMouris/Sediment_Load_Calculation.
 from fun import *
 
 # Create results folder
-if not os.path.exists(resuls_folder):
-    os.makedirs(resuls_folder)
+if not os.path.exists(results_folder):
+    os.makedirs(results_folder)
 
-# READ INPUT FILES ---------------------------------------------------------------------------------------------
+# READ INPUT FILES
 # Read SY data:
 filenames_sy = glob.glob(sy_folder + "/*.txt")
 
@@ -23,7 +23,7 @@ q_df.rename(columns={'YY': 'year', 'MM': 'month', 'DD': 'day', 'HH': 'hour'}, in
 # Convert first 4 columns to datetime and save to array
 time_df = pd.to_datetime(q_df[['year', 'month', 'day', 'hour']])
 
-# GET FLOW DATA ----------------------------------------------------------------------------------------------
+# GET FLOW DATA
 # Extract discharge data
 q_array = extract_discharge(q_df)
 
@@ -34,8 +34,8 @@ if time_interval != 0:
 # Calculate outflows and save inflows and outflows to array
 timei_total_flows = calculate_outflows_constant_wl(q_array, turbine_capacity)
 
-# GET CONCENTRATION DATA ----------------------------------------------------------------------------------------
-# Calculate monthly volume form inflow data(for concentration data)
+# GET CONCENTRATION DATA
+# Calculate monthly volume from inflow data (for concentration data)
 month_time_df, monthly_volume = monthly_inflow_avg(time_df, q_array)
 
 # Read total sediment yield data and corresponding dates
@@ -56,6 +56,3 @@ seconds_df = time_to_seconds(time_df)
 
 # Build TIMEI file
 build_timei_file(timei_us_ds_array, timei_concent_array, timei_total_flows, seconds_df)
-
-x=1
-

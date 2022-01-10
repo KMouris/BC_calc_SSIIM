@@ -46,18 +46,18 @@ CONSTANT INPUT DATA: that must only be changed if more sub-catchments are to be 
 catchment_order: list of strings, with the names of the sub-catchments to consider, in the order they should be 
 considered
 
-sediment_density: float, sediment density to be used to calculate monthly volume concentration (m3/m3)
+sediment_density: float, sediment density (kg/m3) to be used to calculate monthly volume concentration (m3/m3)
 """
 q_path = r'Y:\Abt1\hiwi\Oreamuno\Tasks\01_BC_Calculation\Example_Files\WaSim\y_opt.b16'
 sy_folder = os.path.abspath(r'../Input/Soil_Input')
 
-resuls_folder = os.path.abspath(r'../Results')
+results_folder = os.path.abspath(r'../results')
 
 turbine_capacity = 108.02
 
 time_interval = 0
 
-upstream_wl = 0
+upstream_wl = 175
 downstream_wl = 175
 
 catchment_order = ['Devoll', 'Holta', 'Zalli', 'Skebices']
