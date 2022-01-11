@@ -187,6 +187,53 @@ def monthly_inflow_avg(df_time, flow_array):
     return month_dates, month_volume
 
 
+def compare_flow_sediment_dates(sy_dates, df_time, timei_flow_array, monthly_vol_array, vol_dates):
+    """
+    Function compares the dates in the flow and the sediment data, and determines the date ranges included in both
+    data sets, and selects the smallest date range, and trims the flow and monthly volume data arrays.
+
+    Args:
+    ------------------------------
+    :param sy_dates: series, with dates considered in the SY data (each row is a different monthly interval)
+    :param df_time: data frame DatetimeIndex or time Series, with original time intervals
+    :param timei_flow_array: np.array, with inflow and outflow data, in timei format
+    :param monthly_vol_array: np.array, with the monthly volume data for each sub-catchment (m3/month)
+    :param vol_dates: series, with dates considered in the discharge data, and which will be used in the model
+
+    :return: modified flow and volume data (np.array) and dates (time Series or DatetimeIndex).
+
+    Note: This function is called if the sediment date range is smaller than the flow date range. If the other way
+    around, the sediment date range is modified in the "calculate_concentration" function.
+    """
+    # Determine start date:
+    if sy_dates[0] > vol_dates[0]:
+        # print("Start date is set by the sy data.")
+        start_date = sy_dates[0]
+    else:
+        # print("Start date is set by the flow data.")
+        start_date = vol_dates[0]
+
+    # Determine end date:
+    if sy_dates[sy_dates.shape[0]-1] < vol_dates[-1]:
+        # print("End date is set by the sy data.")
+        end_date = sy_dates[sy_dates.shape[0]-1]
+    else:
+        # print("End date is set by the flow data.")
+        end_date = vol_dates[-1]
+
+    # Get last day of month, last hour.
+    end_date = end_date.replace(day=calendar.monthrange(end_date.year, end_date.month)[1])
+    end_date = end_date.replace(hour=23, minute=59)
+
+    if vol_dates[0] != start_date or vol_dates[-1] != end_date:
+        trim_vol_array, trim_vol_date = trim_data_to_date(monthly_vol_array, vol_dates, start_date, end_date)
+        trim_flow_array, trim_flow_date = trim_data_to_date(timei_flow_array, df_time, start_date, end_date)
+
+        return trim_flow_array, trim_flow_date, trim_vol_array, trim_vol_date
+    else:
+        return timei_flow_array, df_time, monthly_vol_array, vol_dates
+
+
 # Sediment yield/concentration functions
 def read_sediment_data(catchment_list):
     """
@@ -369,3 +416,26 @@ def build_timei_file(up_down_array, concent_array, flow_array, df_time):
 
     # Save timei
     timei_df.to_csv(os.path.join(results_folder, "timei"), header=False, index=False, sep='\t', na_rep="")
+
+
+# General
+def trim_data_to_date(data_array, date_df, start_date, end_date):
+    """
+    Function trims a data array and the corresponding dates to a different start and end date
+
+    Args:
+    -------------------------------
+    :param data_array: np.array, with data to trim
+    :param date_df: DataFrame, as time Series or DatetimeIndex
+    :param start_date: Timestamp, with start date
+    :param end_date: Timestamp, with end date
+
+    :return: trimmed np.array (with data) and DatetimeIndex (with Timestamp dates)
+    """
+    df_total = pd.DataFrame(data=data_array, index=date_df)
+    df_trim = df_total.loc[start_date:end_date]
+
+    trimmed_array = np.array(df_trim)
+    trimmed_dates = df_trim.index
+
+    return trimmed_array, trimmed_dates

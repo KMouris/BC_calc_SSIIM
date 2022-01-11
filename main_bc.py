@@ -41,6 +41,14 @@ month_time_df, monthly_volume = monthly_inflow_avg(time_df, q_array)
 # Read total sediment yield data and corresponding dates
 sy_dates_df, sy_array = read_sediment_data(filenames_sy)
 
+# Compare flow and concentration available dates, and trim to smallest date range
+if sy_dates_df[0] > month_time_df[0] or sy_dates_df[sy_dates_df.shape[0]-1] < month_time_df[-1]:
+    print("Flow dates must be changed")
+    timei_total_flows, time_df, monthly_volume, month_time_df = compare_flow_sediment_dates(sy_dates_df, time_df,
+                                                                                            timei_total_flows,
+                                                                                            monthly_volume,
+                                                                                            month_time_df)
+
 # Calculate monthly concentration, for date range of discharge data:
 total_concentration_array, trimmed_sy_dates = calculate_concentration(sy_array, monthly_volume, sy_dates_df,
                                                                       month_time_df)
@@ -56,3 +64,4 @@ seconds_df = time_to_seconds(time_df)
 
 # Build TIMEI file
 build_timei_file(timei_us_ds_array, timei_concent_array, timei_total_flows, seconds_df)
+x=1
