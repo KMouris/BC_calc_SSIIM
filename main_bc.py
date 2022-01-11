@@ -64,4 +64,3 @@ seconds_df = time_to_seconds(time_df)
 
 # Build TIMEI file
 build_timei_file(timei_us_ds_array, timei_concent_array, timei_total_flows, seconds_df)
-x=1
