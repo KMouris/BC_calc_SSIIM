@@ -332,13 +332,19 @@ def build_concentration_timei(total_concentration, df_month, df_simulation_time)
                 pass
             else:
                 # When month ends, fill all time steps in that month in the results array
-                concent_grain_fractions[start_value:i, 1:4] = gs_concentration[m, 0]  # Devoll
-                concent_grain_fractions[start_value:i, 5:8] = gs_concentration[m, 1]  # Holta
+                concent_grain_fractions[start_value:i, 1:4] = gs_concentration[m, 0]   # Devoll
+                concent_grain_fractions[start_value:i, 5:8] = gs_concentration[m, 1]   # Holta
                 concent_grain_fractions[start_value:i, 9:12] = gs_concentration[m, 2]  # Zalli
-                concent_grain_fractions[start_value:i, 13:] = gs_concentration[m, 3]  # Skebices
+                concent_grain_fractions[start_value:i, 13:] = gs_concentration[m, 3]   # Skebices
 
                 start_value = i  # To start in in next month, and avoid looping through all time steps
                 break
+    # Fill in for last month
+    concent_grain_fractions[start_value:, 1:4] = gs_concentration[m, 0]   # Devoll
+    concent_grain_fractions[start_value:, 5:8] = gs_concentration[m, 1]   # Holta
+    concent_grain_fractions[start_value:, 9:12] = gs_concentration[m, 2]  # Zalli
+    concent_grain_fractions[start_value:, 13:] = gs_concentration[m, 3]   # Skebices
+
     return concent_grain_fractions
 
 
