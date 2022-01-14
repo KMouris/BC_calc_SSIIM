@@ -396,7 +396,7 @@ def build_timei_file(up_down_array, concent_array, flow_array, df_time):
 
     :return: saves df (timei_df) with final boundary condition data for timei file
     """
-    seconds_array = np.array(df_time).astype(int)
+    seconds_array = np.array(df_time)
 
     # Letter df:
     i_letter_df = pd.DataFrame(data=np.full((seconds_array.shape[0], 1), "I"), columns=['Letter'])

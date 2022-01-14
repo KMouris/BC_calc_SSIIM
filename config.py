@@ -60,8 +60,8 @@ turbine_capacity = 108.02
 
 time_interval = 0
 
-upstream_wl = 175
-downstream_wl = 175
+upstream_wl = 172
+downstream_wl = 172
 
 catchment_order = ['Devoll', 'Holta', 'Zalli', 'Skebices']
 sediment_density = 2650
