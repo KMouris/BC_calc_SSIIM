@@ -52,7 +52,7 @@ considered
 sediment_density: float, sediment density (kg/m3) to be used to calculate monthly volume concentration (m3/m3)
 """
 q_path = r'Y:\Abt1\hiwi\Oreamuno\Tasks\01_BC_Calculation\Example_Files\WaSim\y_opt.b16'
-sy_folder = os.path.abspath(r'../Input/Soil_Input')
+sy_folder = os.path.abspath(r'../Input/Sediment_Input')
 
 results_folder = os.path.abspath(r'../results')
 
