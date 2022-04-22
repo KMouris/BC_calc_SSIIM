@@ -3,6 +3,11 @@ Program generates the boundary conditions for the SSIIMM2 numerical software, ba
 software and sediment yield calculations based on the following program:
 
 Mouris, K., Morales Oreamuno, M.F., Schwindt, S., 2021a. Sediment_Load_Calculation.
+
+Edit: Surac, J. 2022
+    Added seasonal changing water level with a threshold based water control logic.
+    This changes the mass equation from inflow = outflow to storage = inflow - outflow.
+
 https://github.com/KMouris/Sediment_Load_Calculation.
 """
 
@@ -16,7 +21,7 @@ if not os.path.exists(results_folder):
 # Read SY data:
 filenames_sy = glob.glob(sy_folder + "/*.txt")
 
-# read .b16 file with discharge data to df
+# read .b16 fiext insle with discharge data to df
 q_df = pd.read_csv(q_path, sep='\t', header=0, skiprows=[1, 2])
 # rename to convert to date time
 q_df.rename(columns={'YY': 'year', 'MM': 'month', 'DD': 'day', 'HH': 'hour'}, inplace=True)
@@ -31,8 +36,8 @@ q_array = extract_discharge(q_df)
 if time_interval != 0:
     time_df, q_array = resample_time(time_df, q_array, time_interval)
 
-# Calculate outflows and save inflows and outflows to array
-timei_total_flows = calculate_outflows_constant_wl(q_array, turbine_capacity)
+# Calculate outflows and water levels with a dynamic threshold based water control logic
+timei_total_flows, timei_us_ds_array = calculate_outflows_seasonal_wl(q_array, time_df)
 
 # GET CONCENTRATION DATA
 # Calculate monthly volume from inflow data (for concentration data)
@@ -55,9 +60,6 @@ total_concentration_array, trimmed_sy_dates = calculate_concentration(sy_array, 
 
 # Separate monthly concentration for the 3 inflow grain size fractions (equally) for each sub-catchment
 timei_concent_array = build_concentration_timei(total_concentration_array, trimmed_sy_dates, time_df)
-
-# upstream and downstream WL data for timei file
-timei_us_ds_array = upstream_downstream_data(upstream_wl, downstream_wl, time_df)
 
 # Time steps in seconds
 seconds_df = time_to_seconds(time_df)

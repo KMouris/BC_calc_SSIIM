@@ -25,7 +25,7 @@ except ModuleNotFoundError as e:
 """
 INPUT DATA: 
 q_path: str, path where the .b16 WaSim data (detail input format)
-
+q_storage: str, path where water level is linked to water storage volume
 sy_folder: str, path of folder where the .txt files with the total soil yield data for each sub-catchment 
     It must have a .txt file for the following sub-catchments: Devoll, Holta, Zalli and Skebices
     Each .txt file name must contain the name of the sub-catchment. 
@@ -36,12 +36,13 @@ time_interval: int, with the following possible values:
     * 1 to resample original flow data to daily data
     * 2 to resample original flow data to monthly data
     
-upstream_wl: float, with the constant upstream water level to be used (for all time steps)
-downstream_wl: float, with the constant upstream water level to be used (for all time steps)
-    * NOTE: If user wants to use time-dependent upstream or downstream water levels, the input file must be a .txt file
-    with the water level value and the corresponding time step assigned to it. A function must be added (or modify 
-    'upstream_downstream_data' function) to read the data, re-discretize it to the simulation time step (if needed) and
-    and assign it to the timei file. 
+winter_threshold: list of int, with the months where the winter water level is applied
+summer_threshold: list of int, with the months where the summer water level is applied
+
+upstream_wl_winter: float, with the constant upstream water level to be used in winter
+downstream_wl_winter: float, with the constant downstream water level to be used in winter
+upstream_wl_summer: float, with the constant upstream water level to be used in summer
+downstream_wl_summer: float, with the constant downstream water level to be used in summer
     
 CONSTANT INPUT DATA: that must only be changed if more sub-catchments are to be added, or the order in the final files
  should be changed: 
@@ -51,8 +52,9 @@ considered
 
 sediment_density: float, sediment density (kg/m3) to be used to calculate monthly volume concentration (m3/m3)
 """
-q_path = r'Y:\Abt1\hiwi\Oreamuno\Tasks\01_BC_Calculation\Example_Files\WaSim\y_opt.b16'
-sy_folder = os.path.abspath(r'../Input/Sediment_Input')
+q_path = r'/home/yendras/hiwi/01_BC_Calculation/Example_Files/WaSim/y_opt.b16'
+q_storage = r'/home/yendras/hiwi/01_BC_Calculation/Python/Input/storage_curve_2019.txt'
+sy_folder = os.path.abspath(r'../Input/Soil_Input')
 
 results_folder = os.path.abspath(r'../results')
 
@@ -60,8 +62,13 @@ turbine_capacity = 108.02
 
 time_interval = 0
 
-upstream_wl = 172
-downstream_wl = 172
+winter_threshold = [11, 12, 1, 2, 3, 4]
+summer_threshold = [5, 6, 7, 8, 9, 10]
+
+upstream_wl_winter = 168
+downstream_wl_winter = 168
+upstream_wl_summer = 173
+downstream_wl_summer = 173
 
 catchment_order = ['Devoll', 'Holta', 'Zalli', 'Skebices']
 sediment_density = 2650
