@@ -151,7 +151,7 @@ def calculate_outflows_seasonal_wl(inflow_array, df_time):
     linearly interpolated based on the current volume and a water level volume correlation file which is written in the
     variable q_storage.
     The water level is controlled with a dynamic threshold based logic. If the water level sinks 2 meters below the
-    target level the storage mode is activated and the turbine has no output. If the water level is within (-2) - (-0)
+    target level the storage mode is activated and the turbine has no outflow. If the water level is within (-2) - (-0)
     of the target level only 50 % of the inflow runs through the turbine. If the water level is within (+0) - (+0.1) of
     the target level the turbine runs with the inflow and only as high as the turbine capacity. When above the turbine
     runs always at maximum capacity. If the water level exceeds the 175 m water level an additional spillway drops the

@@ -26,7 +26,7 @@ except ModuleNotFoundError as e:
 INPUT DATA: 
 q_path: str, path where the .b16 WaSim data (detail input format)
 q_storage: str, path where water level is linked to water storage volume
-sy_folder: str, path of folder where the .txt files with the total soil yield data for each sub-catchment 
+sy_folder: str, path of folder where the .txt files with the total sediment yield data for each sub-catchment 
     It must have a .txt file for the following sub-catchments: Devoll, Holta, Zalli and Skebices
     Each .txt file name must contain the name of the sub-catchment. 
 turbine_capacity: float, maximum turbine capacity
