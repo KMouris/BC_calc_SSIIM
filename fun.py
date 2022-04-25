@@ -138,32 +138,128 @@ def extract_discharge(input_df):
     output_q[:, 1] = input_df['4']  # Holta
     output_q[:, 2] = input_df['2']  # Zalli
     output_q[:, 3] = input_df['3']  # Skebices
+    # output_q[:, 4] = input_df['0']  # Skebices
 
     return output_q
 
 
-def calculate_outflows_constant_wl(inflow_array, t_capacity):
+def calculate_outflows_seasonal_wl(inflow_array, df_time):
     """
-    Function calculates the outflows based on a constant water level, meaning that inflows = outflows. The outflows are
-    through a turbine, with a maximum capacity, and a spillway, in case the inflow exceeds the turbine capacity. The
-    total inflow is calculated as the sum of the inflows from each sub-catchment (row-wise sum), and the outflow is
-    calculated for each time interval (each row).
+    Function calculates the outflows and water levels based on a changing seasonal water level, meaning that
+    inflows - outflows = storage. The total inflow is calculated as the sum of the inflows from each sub-catchment
+    (row-wise sum), and the outflow and water level is calculated for each time interval (each row). The water level is
+    linearly interpolated based on the current volume and a water level volume correlation file which is written in the
+    variable q_storage.
+    The water level is controlled with a dynamic threshold based logic. If the water level sinks 2 meters below the
+    target level the storage mode is activated and the turbine has no output. If the water level is within (-2) - (-0)
+    of the target level only 50 % of the inflow runs through the turbine. If the water level is within (+0) - (+0.1) of
+    the target level the turbine runs with the inflow and only as high as the turbine capacity. When above the turbine
+    runs always at maximum capacity. If the water level exceeds the 175 m water level an additional spillway drops the
+    inflow.
 
     :param inflow_array: np.array, with the inflow data for each sub-catchment (in this case 4). Each column is a
     different sub-catchment and each row corresponds to a different time interval.
-    :param t_capacity: float, turbine capacity
+    :param df_time: data frame DatetimeIndex or time Series, with original time intervals
 
     :return: np.array with [inflows (4), turbine outflow, spillway outflow], in that order.
+    :return: np.array with [0, 0, downstream water level, upstream water level], in that order.
     """
+
+    # Read file with wl and volume correlation
+    q_vol_wl_correlation = pd.read_csv(q_storage, sep='\t', header=0)
     total_inflow = np.sum(inflow_array, axis=1)
 
-    turbine_outflow = np.where(total_inflow > t_capacity, t_capacity, total_inflow)
-    spillway_outflow = np.where(total_inflow > t_capacity, total_inflow - t_capacity, 0)
+    # Create empty array with target wl and volume
+    us_ds_array = np.full((inflow_array.shape[0], 4), 0.0)
+
+    # Create empty array with outflow for every time step
+    turbine_outflow = np.full((inflow_array.shape[0], 1), 0.0)
+    spillway_outflow = np.full((inflow_array.shape[0], 1), 0.0)
+
+    # Iterate through each data point
+    for i, (df_dt, inflow) in enumerate(zip(df_time, total_inflow)):
+
+        overflow = 0
+        current_turbine_capacity = turbine_capacity
+
+        # Apply target wl based on hydrological year
+        if df_dt.month in winter_threshold:
+            target_wl = downstream_wl_winter
+        elif df_dt.month in summer_threshold:
+            target_wl = downstream_wl_summer
+        else:
+            raise Exception(
+                f"Error in seasonal water level threshold function. Returning default water level: {downstream_wl}")
+
+        # Fill upper and lower boundary for storage controll
+        # Boundaries are within target_volume ( + 0,1 wl)
+        # Emergency boundaries are within target_volume ( - 2 wl & 175 m asl)
+        target_wl_upper = target_wl + 0.1
+        target_wl_lower_emergency = target_wl - 2
+        target_wl_upper_emergency = 175
+
+        target_volume = q_vol_wl_correlation[q_vol_wl_correlation["Elevation"] == target_wl]["Volume"].values[0]
+
+        # Apply current water level and volume
+        if i == 0:
+            current_volume = target_volume
+            current_wl = target_wl
+        else:
+            # Waterlevel for current volumes
+            lower_wl = q_vol_wl_correlation[q_vol_wl_correlation["Volume"] <= current_volume].values[-1]
+            if lower_wl[0] == target_wl_upper_emergency:
+                upper_wl = lower_wl
+            else:
+                upper_wl = q_vol_wl_correlation[q_vol_wl_correlation["Volume"] >= current_volume].values[0]
+
+            # Interpolate current water level
+            if upper_wl[0] == lower_wl[0]:
+                current_wl = upper_wl[0]
+            else:
+                current_wl = (current_volume - lower_wl[1]) / (upper_wl[1] - lower_wl[1]) * (
+                        upper_wl[0] - lower_wl[0]) + lower_wl[0]
+
+        # Water level is below emergency threshold therefore store all inflow
+        if current_wl < target_wl_lower_emergency:
+            current_turbine_capacity = 0
+
+        # Water level is lower than the target water level therefore throttle turbine
+        elif current_wl < target_wl:
+            if turbine_capacity_throttled >= inflow * .5:
+                current_turbine_capacity = inflow * .5
+            else:
+                current_turbine_capacity = turbine_capacity_throttled
+
+        # Water level is above 175 m asl therefore spill additional inflow
+        elif current_wl > target_wl_upper_emergency:
+            overflow = inflow
+
+        # Water level is above the target threshold therefore use full turbine capacity
+        elif target_wl > target_wl_upper:
+            current_turbine_capacity = turbine_capacity
+
+
+        # Water level is within threshold therefore keep steady
+        else:
+            if turbine_capacity >= inflow:
+                current_turbine_capacity = inflow
+
+        # New waterlevel according to mass equation
+        # Inflow, turbine and overflow is [m³/s] while every time step is 3 hours. Therefore, multiply by 3600*3.
+        current_volume = current_volume + (inflow - current_turbine_capacity - overflow) * 3600 * 3
+
+        # Output of the reservoir
+        turbine_outflow[i] = current_turbine_capacity
+        spillway_outflow[i] = overflow
+
+        # Total water level data
+        us_ds_array[i, 2] = current_wl
+        us_ds_array[i, 3] = current_wl
 
     # Total flow data
     total_flow = np.c_[inflow_array, turbine_outflow, spillway_outflow]
 
-    return total_flow
+    return total_flow, us_ds_array
 
 
 def monthly_inflow_avg(df_time, flow_array):
@@ -214,9 +310,9 @@ def compare_flow_sediment_dates(sy_dates, df_time, timei_flow_array, monthly_vol
         start_date = vol_dates[0]
 
     # Determine end date:
-    if sy_dates[sy_dates.shape[0]-1] < vol_dates[-1]:
+    if sy_dates[sy_dates.shape[0] - 1] < vol_dates[-1]:
         # print("End date is set by the sy data.")
-        end_date = sy_dates[sy_dates.shape[0]-1]
+        end_date = sy_dates[sy_dates.shape[0] - 1]
     else:
         # print("End date is set by the flow data.")
         end_date = vol_dates[-1]
@@ -332,49 +428,20 @@ def build_concentration_timei(total_concentration, df_month, df_simulation_time)
                 pass
             else:
                 # When month ends, fill all time steps in that month in the results array
-                concent_grain_fractions[start_value:i, 1:4] = gs_concentration[m, 0]   # Devoll
-                concent_grain_fractions[start_value:i, 5:8] = gs_concentration[m, 1]   # Holta
+                concent_grain_fractions[start_value:i, 1:4] = gs_concentration[m, 0]  # Devoll
+                concent_grain_fractions[start_value:i, 5:8] = gs_concentration[m, 1]  # Holta
                 concent_grain_fractions[start_value:i, 9:12] = gs_concentration[m, 2]  # Zalli
-                concent_grain_fractions[start_value:i, 13:] = gs_concentration[m, 3]   # Skebices
+                concent_grain_fractions[start_value:i, 13:] = gs_concentration[m, 3]  # Skebices
 
                 start_value = i  # To start in in next month, and avoid looping through all time steps
                 break
     # Fill in for last month
-    concent_grain_fractions[start_value:, 1:4] = gs_concentration[m, 0]   # Devoll
-    concent_grain_fractions[start_value:, 5:8] = gs_concentration[m, 1]   # Holta
+    concent_grain_fractions[start_value:, 1:4] = gs_concentration[m, 0]  # Devoll
+    concent_grain_fractions[start_value:, 5:8] = gs_concentration[m, 1]  # Holta
     concent_grain_fractions[start_value:, 9:12] = gs_concentration[m, 2]  # Zalli
-    concent_grain_fractions[start_value:, 13:] = gs_concentration[m, 3]   # Skebices
+    concent_grain_fractions[start_value:, 13:] = gs_concentration[m, 3]  # Skebices
 
     return concent_grain_fractions
-
-
-# TIMEI FILES
-def upstream_downstream_data(up, down, df_time):
-    """
-    Function fills the initial part (upstream and downstream data) of the 'I' dataset part of the timei file. It keeps
-    the upstream and downstream discharges at 0, and assigns the upstream and downstream water level for each
-    simulation time step.
-    The order of columns is [upstream_discharge, downstream_discharge, upstream_wl, downstream_wl] or [0, 0, num, num]
-
-    :param up: float, with constant upstream water level (str, with path where .txt file with upstream WL data is)
-    :param down: float, with constant downstream water level (str, with path where .txt file with downstream WL data is)
-    :param df_time: df, time series with time steps in simulation
-
-    :return: np.array, with (ix4) size array, with upstream and downstream discharges (value of 0) and water levels
-    (constants).
-
-    Note: it currently only works for a constant upstream and downstream water level. If a time-dependent water level
-    is to be used, the corresponding code must be written to read the .txt file with the data, the time discretization,
-    and writing it to the corresponding array.
-    """
-    us_ds_array = np.full((df_time.shape[0], 4), 0.0)
-    if type(up) == int or float and type(down) == int or float:  # If input data are constant numerical type
-        us_ds_array[:, 2] = upstream_wl
-        us_ds_array[:, 3] = downstream_wl
-    else:
-        print("The program is not yet fit to read upstream and downstream water levels from .txt file")
-
-    return us_ds_array
 
 
 def build_timei_file(up_down_array, concent_array, flow_array, df_time):
@@ -396,7 +463,7 @@ def build_timei_file(up_down_array, concent_array, flow_array, df_time):
 
     :return: saves df (timei_df) with final boundary condition data for timei file
     """
-    seconds_array = np.array(df_time)
+    seconds_array = np.array(df_time).astype(int)
 
     # Letter df:
     i_letter_df = pd.DataFrame(data=np.full((seconds_array.shape[0], 1), "I"), columns=['Letter'])
