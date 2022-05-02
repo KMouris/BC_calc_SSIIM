@@ -12,7 +12,6 @@ https://github.com/KMouris/Sediment_Load_Calculation.
 """
 
 from fun import *
-
 # Create results folder
 if not os.path.exists(results_folder):
     os.makedirs(results_folder)
@@ -49,10 +48,7 @@ sy_dates_df, sy_array = read_sediment_data(filenames_sy)
 # Compare flow and concentration available dates, and trim to smallest date range
 if sy_dates_df[0] > month_time_df[0] or sy_dates_df[sy_dates_df.shape[0]-1] < month_time_df[-1]:
     print("Flow dates must be changed")
-    timei_total_flows, time_df, monthly_volume, month_time_df = compare_flow_sediment_dates(sy_dates_df, time_df,
-                                                                                            timei_total_flows,
-                                                                                            monthly_volume,
-                                                                                            month_time_df)
+    timei_total_flows, time_df, monthly_volume, month_time_df, timei_us_ds_array = compare_flow_sediment_dates(sy_dates_df, time_df, timei_total_flows, monthly_volume, month_time_df, timei_us_ds_array)
 
 # Calculate monthly concentration, for date range of discharge data:
 total_concentration_array, trimmed_sy_dates = calculate_concentration(sy_array, monthly_volume, sy_dates_df,
@@ -62,7 +58,7 @@ total_concentration_array, trimmed_sy_dates = calculate_concentration(sy_array, 
 timei_concent_array = build_concentration_timei(total_concentration_array, trimmed_sy_dates, time_df)
 
 # Time steps in seconds
-seconds_df = time_to_seconds(time_df)
+#seconds_df = time_to_seconds(time_df)
 
 # Build TIMEI file
-build_timei_file(timei_us_ds_array, timei_concent_array, timei_total_flows, seconds_df)
+build_timei_file(timei_us_ds_array, timei_concent_array, timei_total_flows, time_df)
