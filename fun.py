@@ -3,6 +3,8 @@ Module contains functions to read and calculate discharge (inflow/outflow) and v
 of the input boundary condition file for SSIIM2
 
 """
+import pandas as pd
+
 from config import *
 
 
@@ -116,7 +118,7 @@ def time_to_seconds(df_time):
     """
     if isinstance(df_time, pd.DatetimeIndex):  # if Datetime index, change to Series
         df_time = df_time.to_series()
-    seconds = (df_time - df_time[0]).dt.total_seconds()
+    seconds = (df_time - df_time[:1].item()).dt.total_seconds()
     return seconds
 
 
@@ -170,11 +172,12 @@ def calculate_outflows_seasonal_wl(inflow_array, df_time):
     total_inflow = np.sum(inflow_array, axis=1)
 
     # Create empty array with target wl and volume
-    us_ds_array = np.full((inflow_array.shape[0], 4), 0.0)
+    us_ds_array = np.full((df_time.shape[0], 4), 0.0)
+    plot_data = np.zeros(shape=(df_time.shape[0],5))
 
     # Create empty array with outflow for every time step
-    turbine_outflow = np.full((inflow_array.shape[0], 1), 0.0)
-    spillway_outflow = np.full((inflow_array.shape[0], 1), 0.0)
+    turbine_outflow = np.full((df_time.shape[0], 1), 0.0)
+    spillway_outflow = np.full((df_time.shape[0], 1), 0.0)
 
     # Iterate through each data point
     for i, (df_dt, inflow) in enumerate(zip(df_time, total_inflow)):
@@ -189,7 +192,7 @@ def calculate_outflows_seasonal_wl(inflow_array, df_time):
             target_wl = downstream_wl_summer
         else:
             raise Exception(
-                f"Error in seasonal water level threshold function. Returning default water level: {downstream_wl}")
+                f"Error in seasonal water level threshold function. Month {df_dt.month} is not within threshold")
 
         # Fill upper and lower boundary for storage controll
         # Boundaries are within target_volume ( + 0,1 wl)
@@ -225,17 +228,15 @@ def calculate_outflows_seasonal_wl(inflow_array, df_time):
 
         # Water level is lower than the target water level therefore throttle turbine
         elif current_wl < target_wl:
-            if turbine_capacity_throttled >= inflow * .5:
-                current_turbine_capacity = inflow * .5
-            else:
-                current_turbine_capacity = turbine_capacity_throttled
+            current_turbine_capacity = inflow * .5
 
         # Water level is above 175 m asl therefore spill additional inflow
-        elif current_wl > target_wl_upper_emergency:
-            overflow = inflow
+        elif current_wl >= target_wl_upper_emergency:
+            if current_turbine_capacity < inflow:
+                overflow = inflow - current_turbine_capacity
 
         # Water level is above the target threshold therefore use full turbine capacity
-        elif target_wl > target_wl_upper:
+        elif current_wl > target_wl_upper:
             current_turbine_capacity = turbine_capacity
 
 
@@ -246,7 +247,18 @@ def calculate_outflows_seasonal_wl(inflow_array, df_time):
 
         # New waterlevel according to mass equation
         # Inflow, turbine and overflow is [m³/s] while every time step is 3 hours. Therefore, multiply by 3600*3.
-        current_volume = current_volume + (inflow - current_turbine_capacity - overflow) * 3600 * 3
+
+        if time_interval == 0:
+            time_step = 3
+        elif time_interval == 1:
+            time_step = 24
+        elif time_interval == 2:
+            time_step = 24 * calendar.monthrange(df_dt.year, df_dt.month)[1]
+        else:
+            raise Exception(
+                f"Error in calculate outflow function. Time interval is not valid: {time_interval}")
+
+        current_volume = current_volume + (inflow - current_turbine_capacity - overflow) * 3600 * time_step
 
         # Output of the reservoir
         turbine_outflow[i] = current_turbine_capacity
@@ -255,6 +267,15 @@ def calculate_outflows_seasonal_wl(inflow_array, df_time):
         # Total water level data
         us_ds_array[i, 2] = current_wl
         us_ds_array[i, 3] = current_wl
+
+        plot_data[i,0] = int(round(df_dt.timestamp()))
+        plot_data[i,1] = current_wl
+        plot_data[i,2] = inflow
+        plot_data[i,3] = current_turbine_capacity
+        plot_data[i,4] = overflow
+
+    if log_outflow_data:
+        pd.DataFrame(plot_data).to_csv(os.path.join(results_folder, "debug.csv"), header=False, index=False, sep='\t', na_rep="")
 
     # Total flow data
     total_flow = np.c_[inflow_array, turbine_outflow, spillway_outflow]
@@ -283,7 +304,7 @@ def monthly_inflow_avg(df_time, flow_array):
     return month_dates, month_volume
 
 
-def compare_flow_sediment_dates(sy_dates, df_time, timei_flow_array, monthly_vol_array, vol_dates):
+def compare_flow_sediment_dates(sy_dates, df_time, timei_flow_array, monthly_vol_array, vol_dates, timei_us_ds_array):
     """
     Function compares the dates in the flow and the sediment data, and determines the date ranges included in both
     data sets, and selects the smallest date range, and trims the flow and monthly volume data arrays.
@@ -324,10 +345,12 @@ def compare_flow_sediment_dates(sy_dates, df_time, timei_flow_array, monthly_vol
     if vol_dates[0] != start_date or vol_dates[-1] != end_date:
         trim_vol_array, trim_vol_date = trim_data_to_date(monthly_vol_array, vol_dates, start_date, end_date)
         trim_flow_array, trim_flow_date = trim_data_to_date(timei_flow_array, df_time, start_date, end_date)
+        trim_timei_us_ds_array, trim_flow_date = trim_data_to_date(timei_us_ds_array, df_time, start_date, end_date)
 
-        return trim_flow_array, trim_flow_date, trim_vol_array, trim_vol_date
+
+        return trim_flow_array, trim_flow_date, trim_vol_array, trim_vol_date, trim_timei_us_ds_array
     else:
-        return timei_flow_array, df_time, monthly_vol_array, vol_dates
+        return timei_flow_array, df_time, monthly_vol_array, vol_dates, timei_us_ds_array
 
 
 # Sediment yield/concentration functions
@@ -463,7 +486,27 @@ def build_timei_file(up_down_array, concent_array, flow_array, df_time):
 
     :return: saves df (timei_df) with final boundary condition data for timei file
     """
-    seconds_array = np.array(df_time).astype(int)
+
+    # Select specific time frame if stated
+    try:
+        mask_timeframe = ((df_time >= timei_date_start) & (df_time <= timei_date_end))
+    except:
+        mask_timeframe = [True]*df_time.shape[0]
+
+    # Check if there is valid data within the timeframe
+    df_time = df_time[mask_timeframe]
+    if df_time.shape[0]==0:
+        print(f"There is no valid data in the timeframe {timei_date_start} - {timei_date_end}.")
+        return
+
+    # Apply time frame as a mask
+    masked_df_time = time_to_seconds(df_time)
+    masked_up_down_array = up_down_array[mask_timeframe]
+    masked_concent_array = concent_array[mask_timeframe]
+    masked_flow_array = flow_array[mask_timeframe]
+
+    seconds_array = np.array(masked_df_time).astype(int)
+
 
     # Letter df:
     i_letter_df = pd.DataFrame(data=np.full((seconds_array.shape[0], 1), "I"), columns=['Letter'])
@@ -473,11 +516,11 @@ def build_timei_file(up_down_array, concent_array, flow_array, df_time):
     time_df = pd.DataFrame(data=seconds_array, columns=['time'])
 
     # Combine upstream/downstream data with concentrations for I data
-    i_concat_array = np.concatenate((up_down_array, concent_array), axis=1)
+    i_concat_array = np.concatenate((masked_up_down_array, masked_concent_array), axis=1)
     i_concat_df = pd.DataFrame(data=i_concat_array, columns=np.arange(1, i_concat_array.shape[1] + 1))
 
     # Add 3 zeros at the end of flow data for Q data
-    q_concat_array = np.concatenate((flow_array, np.full((seconds_array.shape[0], 3), 0.0)), axis=1)
+    q_concat_array = np.concatenate((masked_flow_array, np.full((seconds_array.shape[0], 3), 0.0)), axis=1)
     q_concat_df = pd.DataFrame(data=q_concat_array, columns=np.arange(1, q_concat_array.shape[1] + 1))
 
     # Final I and Q df
@@ -490,6 +533,7 @@ def build_timei_file(up_down_array, concent_array, flow_array, df_time):
     # Save timei
     timei_df.to_csv(os.path.join(results_folder, "timei"), header=False, index=False, sep='\t', na_rep="")
 
+    return timei_df
 
 # General
 def trim_data_to_date(data_array, date_df, start_date, end_date):

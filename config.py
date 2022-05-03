@@ -58,6 +58,8 @@ sy_folder = os.path.abspath(r'../Input/Soil_Input')
 
 results_folder = os.path.abspath(r'../results')
 
+log_outflow_data = True
+
 turbine_capacity = 108.02
 
 time_interval = 0
@@ -69,6 +71,10 @@ upstream_wl_winter = 168
 downstream_wl_winter = 168
 upstream_wl_summer = 173
 downstream_wl_summer = 173
+
+
+#timei_date_start = datetime.datetime(2020, 1, 1)
+#timei_date_end = datetime.datetime(2025, 12, 31)
 
 catchment_order = ['Devoll', 'Holta', 'Zalli', 'Skebices']
 sediment_density = 2650
