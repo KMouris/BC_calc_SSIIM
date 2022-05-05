@@ -565,14 +565,14 @@ def trim_data_to_date(data_array, date_df, start_date, end_date):
 
 def plot_inflow_outflow(df_plot):
     """
-    Function plots water level and the mass bilance in two plots. The dataframe has to have the following columns:
+    Function plots water level and the mass balance in two plots. The dataframe has to have the following columns:
     "timestamp": int, with the unix time
     "water level": float, with the water levels in meter
     "inflow": float, with the total water inflow in m³/s
     "overflow": float, with the water dumped in the overflow in m³/s
     "turbine": float, with the water powering the turbine in m³/s
 
-    The two plots are stored in the results_folder given in the config file as "waterlevel.png" and "massbilance.png"
+    The two plots are stored in the results_folder given in the config file as "waterlevel.png" and "massbalance.png"
 
     :param df_plot: pd.DataFrame, with the timestamp, water levels and inflow/outflow values
     """
@@ -608,22 +608,22 @@ def plot_inflow_outflow(df_plot):
     fig1.savefig(os.path.join(results_folder, "waterlevel.png"))
     fig1.show()
 
-    # Mass bilance plot
+    # Mass balance plot
     df_plot.plot(ax=ax2, y="inflow", label="Inflow", color="blue", kind="line", linewidth=5, legend=False)
-    df_plot.plot(ax=ax2, y=["turbine", "overflow"], label=["Turbine", "Overflow"], color=["green", "red"], kind="area",
+    df_plot.plot(ax=ax2, y=["turbine", "overflow"], label=["Turbine", "Spillway"], color=["green", "red"], kind="area",
                  stacked=True, legend=False)
 
-    ax2.set_title("Mass bilance", fontsize=70)
+    ax2.set_title("Mass balance", fontsize=70)
 
     ax2.grid(b=True, which='major', axis='y', color='lightgrey', linestyle='-')
     ax2.grid(b=True, which='major', axis='x', color='lightgrey', linestyle='-')
 
-    ax2.set_ylabel('Water throughput [m³/s]', fontdict={'fontsize': 60})
+    ax2.set_ylabel('Discharge [m³/s]', fontdict={'fontsize': 60})
     ax2.set_xlabel('Date ', fontdict={'fontsize': 60})
     ax2.tick_params(axis='both', labelsize=50)
 
     handles, labels = ax2.get_legend_handles_labels()
     ax2.legend(handles, labels, loc='upper right', fontsize=60)
 
-    fig2.savefig(os.path.join(results_folder, "massbilance.png"))
+    fig2.savefig(os.path.join(results_folder, "massbalance.png"))
     fig2.show()
