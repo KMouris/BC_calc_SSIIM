@@ -3,8 +3,6 @@ Module contains functions to read and calculate discharge (inflow/outflow) and v
 of the input boundary condition file for SSIIM2
 
 """
-import pandas as pd
-
 from config import *
 
 
@@ -23,7 +21,7 @@ def modify_time_interval(df_time, flow_array, interval):
 
     :param df_time: data frame, with original time intervals, in datetime format
     :param flow_array: np.array, with inflow data
-    :param interval: 1, if re-sample is to daily, 2 if re-sample is to monthly
+    :param interval: 1, if re-sample is too daily, 2 if re-sample is to monthly
 
     :return: data frame, with new time intervals, and np.array, with the flow data averaged for the new time interval.
 
@@ -36,33 +34,25 @@ def modify_time_interval(df_time, flow_array, interval):
     end_date = df_time.iloc[-1]
 
     if interval == 1:  # Daily (frequency is 'D')
-        resampled_dates = pd.to_datetime(pd.date_range(start_date, end_date, freq='D').strftime("%Y%m%d").tolist(),
-                                         format="%Y%m%d")
-        resampled_flow = np.full((len(resampled_dates), flow_array.shape[1]), 0.0)
-        initial = 0
-        for d, date in enumerate(resampled_dates):  # Loop through each day to consider
-            for i in range(initial, df_time.shape[0]):  # Loop through the original flow/date data
-                if date.day != df_time[i].day:
-                    resampled_flow[d, :] = np.mean(flow_array[initial:i, :], axis=0)
-
-                    initial = i
-                    break
+        freq_str = "D"
     elif interval == 2:  # monthly (frequency is "MS")
-        resampled_dates = pd.to_datetime(pd.date_range(start_date, end_date, freq='MS').strftime("%Y%m%d").tolist(),
-                                         format="%Y%m%d")
-        resampled_flow = np.full((len(resampled_dates), flow_array.shape[1]), 0.0)
-        initial = 0
-        for d, date in enumerate(resampled_dates):  # Loop through each day to consider
-            for i in range(initial, df_time.shape[0]):  # Loop through the original flow/date data
-                if date.month != df_time[i].month:
-                    resampled_flow[d, :] = np.mean(flow_array[initial:i, :], axis=0)
-
-                    initial = i
-                    break
+        freq_str = "MS"
     else:
         print(f"No resampling was done, since {interval} is not a valid entry")
 
         return df_time, flow_array
+
+    resampled_dates = pd.to_datetime(pd.date_range(start_date, end_date, freq=freq_str).strftime("%Y%m%d").tolist(),
+                                     format="%Y%m%d")
+    resampled_flow = np.full((len(resampled_dates), flow_array.shape[1]), 0.0)
+    initial = 0
+    for d, date in enumerate(resampled_dates):  # Loop through each day to consider
+        for i in range(initial, df_time.shape[0]):  # Loop through the original flow/date data
+            if ((interval == 1) & (date.day != df_time[i].day)) | ((interval == 2) & (date.month != df_time[i].month)):
+                resampled_flow[d, :] = np.mean(flow_array[initial:i, :], axis=0)
+
+                initial = i
+                break
 
     return resampled_dates, resampled_flow
 
@@ -118,7 +108,7 @@ def time_to_seconds(df_time):
     """
     if isinstance(df_time, pd.DatetimeIndex):  # if Datetime index, change to Series
         df_time = df_time.to_series()
-    seconds = (df_time - df_time[:1].item()).dt.total_seconds()
+    seconds = [np.int64((df_dt - df_time[:1].item()).total_seconds()) for df_dt in df_time]
     return seconds
 
 
@@ -159,6 +149,10 @@ def calculate_outflows_seasonal_wl(inflow_array, df_time):
     runs always at maximum capacity. If the water level exceeds the 175 m water level an additional spillway drops the
     inflow.
 
+    Note: This function is less accurate with time_interval = 1 (averaging by day) or time_interval = 2 (averaging by
+    month). This is due to the different modis being applied to longer time frames. For example if the water level
+    drops below the -2 a.s.l and the time_interval is set to two (monthly), all inflow within one month will be stored.
+
     :param inflow_array: np.array, with the inflow data for each sub-catchment (in this case 4). Each column is a
     different sub-catchment and each row corresponds to a different time interval.
     :param df_time: data frame DatetimeIndex or time Series, with original time intervals
@@ -173,7 +167,7 @@ def calculate_outflows_seasonal_wl(inflow_array, df_time):
 
     # Create empty array with target wl and volume
     us_ds_array = np.full((df_time.shape[0], 4), 0.0)
-    plot_data = np.zeros(shape=(df_time.shape[0],5))
+    plot_data = np.zeros(shape=(df_time.shape[0], 6))
 
     # Create empty array with outflow for every time step
     turbine_outflow = np.full((df_time.shape[0], 1), 0.0)
@@ -186,20 +180,11 @@ def calculate_outflows_seasonal_wl(inflow_array, df_time):
         current_turbine_capacity = turbine_capacity
 
         # Apply target wl based on hydrological year
-        if df_dt.month in winter_threshold:
-            target_wl = downstream_wl_winter
-        elif df_dt.month in summer_threshold:
-            target_wl = downstream_wl_summer
-        else:
-            raise Exception(
-                f"Error in seasonal water level threshold function. Month {df_dt.month} is not within threshold")
+        target_wl = wl_threshold[df_dt.month - 1]
 
         # Fill upper and lower boundary for storage controll
-        # Boundaries are within target_volume ( + 0,1 wl)
-        # Emergency boundaries are within target_volume ( - 2 wl & 175 m asl)
-        target_wl_upper = target_wl + 0.1
-        target_wl_lower_emergency = target_wl - 2
-        target_wl_upper_emergency = 175
+        target_wl_upper = target_wl + target_wl_upper_boundary
+        target_wl_lower_emergency = target_wl + target_wl_lower_boundary
 
         target_volume = q_vol_wl_correlation[q_vol_wl_correlation["Elevation"] == target_wl]["Volume"].values[0]
 
@@ -210,7 +195,7 @@ def calculate_outflows_seasonal_wl(inflow_array, df_time):
         else:
             # Waterlevel for current volumes
             lower_wl = q_vol_wl_correlation[q_vol_wl_correlation["Volume"] <= current_volume].values[-1]
-            if lower_wl[0] == target_wl_upper_emergency:
+            if lower_wl[0] == target_wl_maximum:
                 upper_wl = lower_wl
             else:
                 upper_wl = q_vol_wl_correlation[q_vol_wl_correlation["Volume"] >= current_volume].values[0]
@@ -231,14 +216,13 @@ def calculate_outflows_seasonal_wl(inflow_array, df_time):
             current_turbine_capacity = inflow * .5
 
         # Water level is above 175 m asl therefore spill additional inflow
-        elif current_wl >= target_wl_upper_emergency:
+        elif current_wl >= target_wl_maximum:
             if current_turbine_capacity < inflow:
                 overflow = inflow - current_turbine_capacity
 
         # Water level is above the target threshold therefore use full turbine capacity
         elif current_wl > target_wl_upper:
             current_turbine_capacity = turbine_capacity
-
 
         # Water level is within threshold therefore keep steady
         else:
@@ -268,14 +252,17 @@ def calculate_outflows_seasonal_wl(inflow_array, df_time):
         us_ds_array[i, 2] = current_wl
         us_ds_array[i, 3] = current_wl
 
-        plot_data[i,0] = int(round(df_dt.timestamp()))
-        plot_data[i,1] = current_wl
-        plot_data[i,2] = inflow
-        plot_data[i,3] = current_turbine_capacity
-        plot_data[i,4] = overflow
+        plot_data[i, 0] = np.int64((round(df_dt.timestamp())))
+        plot_data[i, 1] = inflow
+        plot_data[i, 2] = (inflow - current_turbine_capacity - overflow)
+        plot_data[i, 3] = current_turbine_capacity
+        plot_data[i, 4] = overflow
+        plot_data[i, 5] = current_wl
 
-    if log_outflow_data:
-        pd.DataFrame(plot_data).to_csv(os.path.join(results_folder, "debug.csv"), header=False, index=False, sep='\t', na_rep="")
+    if plot_outflow_data:
+        plot_inflow_outflow(pd.DataFrame(data=plot_data,
+                                         columns=["timestamp", "inflow", "delta volume", "turbine", "overflow",
+                                                  "water level"]))
 
     # Total flow data
     total_flow = np.c_[inflow_array, turbine_outflow, spillway_outflow]
@@ -316,6 +303,7 @@ def compare_flow_sediment_dates(sy_dates, df_time, timei_flow_array, monthly_vol
     :param timei_flow_array: np.array, with inflow and outflow data, in timei format
     :param monthly_vol_array: np.array, with the monthly volume data for each sub-catchment (m3/month)
     :param vol_dates: series, with dates considered in the discharge data, and which will be used in the model
+    :param timei_us_ds_array: np.array, with water levels upstream and downstream (m a.s.l)
 
     :return: modified flow and volume data (np.array) and dates (time Series or DatetimeIndex).
 
@@ -346,7 +334,6 @@ def compare_flow_sediment_dates(sy_dates, df_time, timei_flow_array, monthly_vol
         trim_vol_array, trim_vol_date = trim_data_to_date(monthly_vol_array, vol_dates, start_date, end_date)
         trim_flow_array, trim_flow_date = trim_data_to_date(timei_flow_array, df_time, start_date, end_date)
         trim_timei_us_ds_array, trim_flow_date = trim_data_to_date(timei_us_ds_array, df_time, start_date, end_date)
-
 
         return trim_flow_array, trim_flow_date, trim_vol_array, trim_vol_date, trim_timei_us_ds_array
     else:
@@ -487,17 +474,9 @@ def build_timei_file(up_down_array, concent_array, flow_array, df_time):
     :return: saves df (timei_df) with final boundary condition data for timei file
     """
 
-    # Select specific time frame if stated
-    try:
-        mask_timeframe = ((df_time >= timei_date_start) & (df_time <= timei_date_end))
-    except:
-        mask_timeframe = [True]*df_time.shape[0]
+    mask_timeframe = get_timeframe_mask(df_time)
 
-    # Check if there is valid data within the timeframe
     df_time = df_time[mask_timeframe]
-    if df_time.shape[0]==0:
-        print(f"There is no valid data in the timeframe {timei_date_start} - {timei_date_end}.")
-        return
 
     # Apply time frame as a mask
     masked_df_time = time_to_seconds(df_time)
@@ -506,7 +485,6 @@ def build_timei_file(up_down_array, concent_array, flow_array, df_time):
     masked_flow_array = flow_array[mask_timeframe]
 
     seconds_array = np.array(masked_df_time).astype(int)
-
 
     # Letter df:
     i_letter_df = pd.DataFrame(data=np.full((seconds_array.shape[0], 1), "I"), columns=['Letter'])
@@ -535,7 +513,34 @@ def build_timei_file(up_down_array, concent_array, flow_array, df_time):
 
     return timei_df
 
+
 # General
+def get_timeframe_mask(df_time):
+    """
+    Function creates a mask based on the given start date (dt_start) and end date (dt_end). This is only done if the
+    restrict_timei_date tag is set to true.
+    If there is no data found within the mask. Then the full mask is set to True and therefore no filter is
+    applied.
+
+    :param df_time: np.array, with the datetime object where the filter is applied to
+    :return: pd.Series, with the shape of df_time and a boolean value for each entry.
+    """
+    true_mask = pd.Series([True] * df_time.shape[0])
+
+    # Select specific time frame if stated
+    if restrict_timei_date:
+        dt_start = parser.parse(timei_date_start)
+        dt_end = parser.parse(timei_date_end)
+
+        mask_timeframe = ((df_time >= dt_start) & (df_time <= dt_end))
+
+        # Check if there is valid data within the timeframe
+        if mask_timeframe.sum() == 0:
+            print(f"There was no data in the selected time frame. All available data was selected to process.")
+            mask_timeframe = true_mask
+        return mask_timeframe
+
+
 def trim_data_to_date(data_array, date_df, start_date, end_date):
     """
     Function trims a data array and the corresponding dates to a different start and end date
@@ -556,3 +561,69 @@ def trim_data_to_date(data_array, date_df, start_date, end_date):
     trimmed_dates = df_trim.index
 
     return trimmed_array, trimmed_dates
+
+
+def plot_inflow_outflow(df_plot):
+    """
+    Function plots water level and the mass bilance in two plots. The dataframe has to have the following columns:
+    "timestamp": int, with the unix time
+    "water level": float, with the water levels in meter
+    "inflow": float, with the total water inflow in m³/s
+    "overflow": float, with the water dumped in the overflow in m³/s
+    "turbine": float, with the water powering the turbine in m³/s
+
+    The two plots are stored in the results_folder given in the config file as "waterlevel.png" and "massbilance.png"
+
+    :param df_plot: pd.DataFrame, with the timestamp, water levels and inflow/outflow values
+    """
+
+    df_plot["Date"] = [datetime.datetime.fromtimestamp(int(float(i))) for i in df_plot["timestamp"]]
+    # df_plot = pd.DataFrame(data=plot_data, columns=)
+
+    # Trim data within mask
+    mask = get_timeframe_mask(df_plot["Date"])
+
+    df_plot = df_plot[mask]
+
+    df_plot = df_plot.set_index("Date")
+
+    fig1, ax1 = mp.subplots(figsize=[50, 25])
+    fig2, ax2 = mp.subplots(figsize=[50, 25])
+
+    # Water level plot
+    df_plot.plot(ax=ax1, y="water level", label="Water level", kind="line", stacked=True, legend=False)
+
+    ax1.set_title("Water level", fontsize=70)
+
+    ax1.grid(b=True, which='major', axis='y', color='lightgrey', linestyle='-')
+    ax1.grid(b=True, which='major', axis='x', color='lightgrey', linestyle='-')
+
+    ax1.set_ylabel('Water level [m]', fontdict={'fontsize': 60})
+    ax1.set_xlabel('Date ', fontdict={'fontsize': 60})
+    ax1.tick_params(axis='both', labelsize=50)
+
+    handles, labels = ax1.get_legend_handles_labels()
+    ax1.legend(handles, labels, loc='upper right', fontsize=60)
+
+    fig1.savefig(os.path.join(results_folder, "waterlevel.png"))
+    fig1.show()
+
+    # Mass bilance plot
+    df_plot.plot(ax=ax2, y="inflow", label="Inflow", color="blue", kind="line", linewidth=5, legend=False)
+    df_plot.plot(ax=ax2, y=["turbine", "overflow"], label=["Turbine", "Overflow"], color=["green", "red"], kind="area",
+                 stacked=True, legend=False)
+
+    ax2.set_title("Mass bilance", fontsize=70)
+
+    ax2.grid(b=True, which='major', axis='y', color='lightgrey', linestyle='-')
+    ax2.grid(b=True, which='major', axis='x', color='lightgrey', linestyle='-')
+
+    ax2.set_ylabel('Water throughput [m³/s]', fontdict={'fontsize': 60})
+    ax2.set_xlabel('Date ', fontdict={'fontsize': 60})
+    ax2.tick_params(axis='both', labelsize=50)
+
+    handles, labels = ax2.get_legend_handles_labels()
+    ax2.legend(handles, labels, loc='upper right', fontsize=60)
+
+    fig2.savefig(os.path.join(results_folder, "massbilance.png"))
+    fig2.show()
