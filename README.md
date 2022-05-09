@@ -50,6 +50,7 @@ The WaSim results must be in .b16 file format, and must contain the following in
 ### Seasonal water level
 The water level is kept close to the target water level given in wl_threshold. The following logic is applied:
 | Water level | Mass balance | Description |
+| ----------- | ------------ | ----------- |
 | current_water_level < target_water_level + `target_wl_lower_boundary` | Turbine = 0, Overflow = 0 | All inflowing water is stored in the reservoir |
 | target_water_level + target_wl_lower_boundary < current_water_level < target_water_level | Turbine = Inflow/2 (<=turbine_capacity), Overflow = 0 | The turbine runs with half of the inflowing water but at maximum at turbine_capacity |
 | target_water_level < current_water_level < target_water_level + target_wl_upper_boundary | Turbine = Inflow (<=turbine_capacity), Overflow = 0 | The turbine runs with the inflowing water but at maximum at turbine_capacity |
