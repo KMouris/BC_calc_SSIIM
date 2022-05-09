@@ -83,7 +83,7 @@ target_wl_upper_boundary = 0.1
 target_wl_lower_boundary = -2
 target_wl_maximum = 175
 
-restrict_timei_date = True
+restrict_timei_date = False
 timei_date_start = "01-01-2018"
 timei_date_end = "31-12-2018"
 

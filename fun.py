@@ -538,7 +538,9 @@ def get_timeframe_mask(df_time):
         if mask_timeframe.sum() == 0:
             print(f"There was no data in the selected time frame. All available data was selected to process.")
             mask_timeframe = true_mask
-        return mask_timeframe
+    else:
+        mask_timeframe = true_mask
+    return mask_timeframe
 
 
 def trim_data_to_date(data_array, date_df, start_date, end_date):
@@ -563,29 +565,33 @@ def trim_data_to_date(data_array, date_df, start_date, end_date):
     return trimmed_array, trimmed_dates
 
 
-def plot_inflow_outflow(df_plot):
+def plot_inflow_outflow(df_data):
     """
-    Function plots water level and the mass bilance in two plots. The dataframe has to have the following columns:
+    Function plots water level and the mass balance in two plots. The dataframe has to have the following columns:
     "timestamp": int, with the unix time
     "water level": float, with the water levels in meter
     "inflow": float, with the total water inflow in m³/s
     "overflow": float, with the water dumped in the overflow in m³/s
     "turbine": float, with the water powering the turbine in m³/s
 
-    The two plots are stored in the results_folder given in the config file as "waterlevel.png" and "massbilance.png"
+    The two plots are stored in the results_folder given in the config file as "waterlevel.png" and "massbalance.png"
 
-    :param df_plot: pd.DataFrame, with the timestamp, water levels and inflow/outflow values
+    :param df_data: pd.DataFrame, with the timestamp, water levels and inflow/outflow values
     """
 
-    df_plot["Date"] = [datetime.datetime.fromtimestamp(int(float(i))) for i in df_plot["timestamp"]]
+    df_data["Date"] = [datetime.datetime.fromtimestamp(int(float(i))) for i in df_data["timestamp"]]
     # df_plot = pd.DataFrame(data=plot_data, columns=)
 
     # Trim data within mask
-    mask = get_timeframe_mask(df_plot["Date"])
+    mask = get_timeframe_mask(df_data["Date"])
 
-    df_plot = df_plot[mask]
+    df_plot = df_data[mask].copy()
 
     df_plot = df_plot.set_index("Date")
+
+    df_plot["turbine"].replace(0, 0, inplace=True)
+    df_plot["overflow"] = df_plot["overflow"].replace(0, int(0))
+
 
     fig1, ax1 = mp.subplots(figsize=[50, 25])
     fig2, ax2 = mp.subplots(figsize=[50, 25])
@@ -595,8 +601,8 @@ def plot_inflow_outflow(df_plot):
 
     ax1.set_title("Water level", fontsize=70)
 
-    ax1.grid(b=True, which='major', axis='y', color='lightgrey', linestyle='-')
     ax1.grid(b=True, which='major', axis='x', color='lightgrey', linestyle='-')
+    ax1.grid(b=True, which='major', axis='y', color='lightgrey', linestyle='-')
 
     ax1.set_ylabel('Water level [m]', fontdict={'fontsize': 60})
     ax1.set_xlabel('Date ', fontdict={'fontsize': 60})
@@ -608,16 +614,19 @@ def plot_inflow_outflow(df_plot):
     fig1.savefig(os.path.join(results_folder, "waterlevel.png"))
     fig1.show()
 
-    # Mass bilance plot
+    # Mass balance plot
+    # Plot order is important to prevent overwriting of certain lines
+    (df_plot["overflow"]+df_plot["turbine"]).plot(ax=ax2, label="Overflow",kind="area", color="red", legend=False)
+    df_plot["turbine"].plot(ax=ax2, label="Turbine", kind="area", color="Green", legend=False)
     df_plot.plot(ax=ax2, y="inflow", label="Inflow", color="blue", kind="line", linewidth=5, legend=False)
-    df_plot.plot(ax=ax2, y=["turbine", "overflow"], label=["Turbine", "Overflow"], color=["green", "red"], kind="area",
-                 stacked=True, legend=False)
 
-    ax2.set_title("Mass bilance", fontsize=70)
+    ax2.set_title("Mass balance", fontsize=70)
 
     ax2.grid(b=True, which='major', axis='y', color='lightgrey', linestyle='-')
     ax2.grid(b=True, which='major', axis='x', color='lightgrey', linestyle='-')
 
+    #TODO: Auto height
+    #ax2.set_yticksautp()
     ax2.set_ylabel('Water throughput [m³/s]', fontdict={'fontsize': 60})
     ax2.set_xlabel('Date ', fontdict={'fontsize': 60})
     ax2.tick_params(axis='both', labelsize=50)
@@ -625,5 +634,5 @@ def plot_inflow_outflow(df_plot):
     handles, labels = ax2.get_legend_handles_labels()
     ax2.legend(handles, labels, loc='upper right', fontsize=60)
 
-    fig2.savefig(os.path.join(results_folder, "massbilance.png"))
+    fig2.savefig(os.path.join(results_folder, "massbalance.png"))
     fig2.show()

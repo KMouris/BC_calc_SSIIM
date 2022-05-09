@@ -12,6 +12,8 @@ https://github.com/KMouris/Sediment_Load_Calculation.
 """
 
 from fun import *
+
+
 # Create results folder
 if not os.path.exists(results_folder):
     os.makedirs(results_folder)
