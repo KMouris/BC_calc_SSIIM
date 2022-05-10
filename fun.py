@@ -147,7 +147,7 @@ def calculate_outflows_seasonal_wl(inflow_array, df_time):
     of the target level only 50 % of the inflow runs through the turbine. If the water level is within (+0) - (+0.1) of
     the target level the turbine runs with the inflow and only as high as the turbine capacity. When above the turbine
     runs always at maximum capacity. If the water level exceeds the 175 m water level an additional spillway drops the
-    inflow.
+    inflow.The target values can be modified in config.py.
 
     Note: This function is less accurate with time_interval = 1 (averaging by day) or time_interval = 2 (averaging by
     month). This is due to the different modis being applied to longer time frames. For example if the water level
@@ -296,8 +296,6 @@ def compare_flow_sediment_dates(sy_dates, df_time, timei_flow_array, monthly_vol
     Function compares the dates in the flow and the sediment data, and determines the date ranges included in both
     data sets, and selects the smallest date range, and trims the flow and monthly volume data arrays.
 
-    Args:
-    ------------------------------
     :param sy_dates: series, with dates considered in the SY data (each row is a different monthly interval)
     :param df_time: data frame DatetimeIndex or time Series, with original time intervals
     :param timei_flow_array: np.array, with inflow and outflow data, in timei format
@@ -547,8 +545,6 @@ def trim_data_to_date(data_array, date_df, start_date, end_date):
     """
     Function trims a data array and the corresponding dates to a different start and end date
 
-    Args:
-    -------------------------------
     :param data_array: np.array, with data to trim
     :param date_df: DataFrame, as time Series or DatetimeIndex
     :param start_date: Timestamp, with start date
@@ -567,7 +563,7 @@ def trim_data_to_date(data_array, date_df, start_date, end_date):
 
 def plot_inflow_outflow(df_data):
     """
-    Function plots water level and the mass balance in two plots. The dataframe has to have the following columns:
+    Function plots water level and the mass balance in two plots. The dataframe needs to have the following columns:
     "timestamp": int, with the unix time
     "water level": float, with the water levels in meter
     "inflow": float, with the total water inflow in m³/s

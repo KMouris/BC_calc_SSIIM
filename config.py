@@ -50,8 +50,8 @@ wl_threshold: list of int, with the target water levels for each month. This arr
 target_wl_upper_boundary: int, with the relative upper boundary to the target water level where the water level is kept 
 steady
 target_wl_lower_boundary: int, with the relative lower boundary to the target water level where the inflow is stored. 
-target_wl_maximum: int, with the maximum water level the reservoir can hold. If the water level rises above the excess 
-inflow is dumped
+target_wl_maximum: int, with the maximum water level of the reservoir. If the water level rises above the excess 
+inflow is released through the spillway.
 If the water level is below target_wl_lower_boundary, turbine is turned off. Turbine is run at half of the inflow level,
 if the water level is between target_wl_lower_boundary and target water level from wl_threshold. When the level is in 
 between the target water level and target_wl_upper_boundary the turbine is kept at inflow level or max capacity if 
