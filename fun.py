@@ -143,7 +143,7 @@ def calculate_outflows_seasonal_wl(inflow_array, df_time):
     linearly interpolated based on the current volume and a water level volume correlation file which is written in the
     variable q_storage.
     The water level is controlled with a dynamic threshold based logic. If the water level sinks 2 meters below the
-    target level the storage mode is activated and the turbine has no output. If the water level is within (-2) - (-0)
+    target level the storage mode is activated and the turbine has no outflow. If the water level is within (-2) - (-0)
     of the target level only 50 % of the inflow runs through the turbine. If the water level is within (+0) - (+0.1) of
     the target level the turbine runs with the inflow and only as high as the turbine capacity. When above the turbine
     runs always at maximum capacity. If the water level exceeds the 175 m water level an additional spillway drops the
@@ -614,17 +614,19 @@ def plot_inflow_outflow(df_data):
     fig1.show()
 
     # Mass balance plot
+
     # Plot order is important to prevent overwriting of certain lines
     (df_plot["overflow"] + df_plot["turbine"]).plot(ax=ax2, label="Overflow", kind="area", color="red", legend=False)
     df_plot["turbine"].plot(ax=ax2, label="Turbine", kind="area", color="Green", legend=False)
     df_plot.plot(ax=ax2, y="inflow", label="Inflow", color="blue", kind="line", linewidth=1, legend=False)
+
 
     ax2.set_title("Mass balance", fontsize=70)
 
     ax2.grid(b=True, which='major', axis='y', color='lightgrey', linestyle='-')
     ax2.grid(b=True, which='major', axis='x', color='lightgrey', linestyle='-')
 
-    ax2.set_ylabel('Water throughput [m³/s]', fontdict={'fontsize': 60})
+    ax2.set_ylabel('Discharge [m³/s]', fontdict={'fontsize': 60})
     ax2.set_xlabel('Date ', fontdict={'fontsize': 60})
     ax2.tick_params(axis='both', labelsize=50)
     ax2.yaxis.reset_ticks()
