@@ -32,6 +32,13 @@ q_storage: str, path where water level is linked to water storage volume
 sy_folder: str, path of folder where the .txt files with the total sediment yield data for each sub-catchment 
     It must have a .txt file for the following sub-catchments: Devoll, Holta, Zalli and Skebices
     Each .txt file name must contain the name of the sub-catchment. 
+results_folder: str, path where the results are safed to.
+
+plot_outflow_data: boolean, whether a plot for outflow is generated
+plot_water_level: boolean, whether a plot for water level is generated
+plot_fig_size: array, of two integers [width, height] for the size of the plots. It is recommended to have a larger 
+width when handling large time frames to improve the quality of the plots.
+
 turbine_capacity: float, maximum turbine capacity
 
 time_interval: int, with the following possible values: 
@@ -71,19 +78,20 @@ results_folder = os.path.abspath(r'../results')
 
 plot_outflow_data = True
 plot_water_level = True
+plot_fig_size = [50, 25]
 
 turbine_capacity = 108.02
 
 time_interval = 0
 
-wl_threshold = [168,168,168,168,173,173,173,173,173,173,168,168]
-        # Boundaries are within target_volume ( + 0,1 wl)
-        # Emergency boundaries are within target_volume ( - 2 wl & 175 m asl)
+wl_threshold = [168, 168, 168, 168, 173, 173, 173, 173, 173, 173, 168, 168]
+# Boundaries are within target_volume ( + 0,1 wl)
+# Emergency boundaries are within target_volume ( - 2 wl & 175 m asl)
 target_wl_upper_boundary = 0.1
 target_wl_lower_boundary = -2
 target_wl_maximum = 175
 
-restrict_timei_date = True
+restrict_timei_date = False
 timei_date_start = "01-01-2018"
 timei_date_end = "31-12-2018"
 

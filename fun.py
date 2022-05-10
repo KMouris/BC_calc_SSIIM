@@ -484,7 +484,7 @@ def build_timei_file(up_down_array, concent_array, flow_array, df_time):
     masked_concent_array = concent_array[mask_timeframe]
     masked_flow_array = flow_array[mask_timeframe]
 
-    seconds_array = np.array(masked_df_time).astype(int)
+    seconds_array = np.array(masked_df_time)
 
     # Letter df:
     i_letter_df = pd.DataFrame(data=np.full((seconds_array.shape[0], 1), "I"), columns=['Letter'])
@@ -538,7 +538,9 @@ def get_timeframe_mask(df_time):
         if mask_timeframe.sum() == 0:
             print(f"There was no data in the selected time frame. All available data was selected to process.")
             mask_timeframe = true_mask
-        return mask_timeframe
+    else:
+        mask_timeframe = true_mask
+    return mask_timeframe
 
 
 def trim_data_to_date(data_array, date_df, start_date, end_date):
@@ -563,7 +565,7 @@ def trim_data_to_date(data_array, date_df, start_date, end_date):
     return trimmed_array, trimmed_dates
 
 
-def plot_inflow_outflow(df_plot):
+def plot_inflow_outflow(df_data):
     """
     Function plots water level and the mass balance in two plots. The dataframe has to have the following columns:
     "timestamp": int, with the unix time
@@ -574,29 +576,32 @@ def plot_inflow_outflow(df_plot):
 
     The two plots are stored in the results_folder given in the config file as "waterlevel.png" and "massbalance.png"
 
-    :param df_plot: pd.DataFrame, with the timestamp, water levels and inflow/outflow values
+    :param df_data: pd.DataFrame, with the timestamp, water levels and inflow/outflow values
     """
 
-    df_plot["Date"] = [datetime.datetime.fromtimestamp(int(float(i))) for i in df_plot["timestamp"]]
+    df_data["Date"] = [datetime.datetime.fromtimestamp(int(float(i))) for i in df_data["timestamp"]]
     # df_plot = pd.DataFrame(data=plot_data, columns=)
 
     # Trim data within mask
-    mask = get_timeframe_mask(df_plot["Date"])
+    mask = get_timeframe_mask(df_data["Date"])
 
-    df_plot = df_plot[mask]
+    df_plot = df_data[mask].copy()
 
     df_plot = df_plot.set_index("Date")
 
-    fig1, ax1 = mp.subplots(figsize=[50, 25])
-    fig2, ax2 = mp.subplots(figsize=[50, 25])
+    df_plot["turbine"].replace(0, 0, inplace=True)
+    df_plot["overflow"] = df_plot["overflow"].replace(0, int(0))
+
+    fig1, ax1 = mp.subplots(figsize=plot_fig_size)
+    fig2, ax2 = mp.subplots(figsize=plot_fig_size)
 
     # Water level plot
     df_plot.plot(ax=ax1, y="water level", label="Water level", kind="line", stacked=True, legend=False)
 
     ax1.set_title("Water level", fontsize=70)
 
-    ax1.grid(b=True, which='major', axis='y', color='lightgrey', linestyle='-')
     ax1.grid(b=True, which='major', axis='x', color='lightgrey', linestyle='-')
+    ax1.grid(b=True, which='major', axis='y', color='lightgrey', linestyle='-')
 
     ax1.set_ylabel('Water level [m]', fontdict={'fontsize': 60})
     ax1.set_xlabel('Date ', fontdict={'fontsize': 60})
@@ -609,9 +614,12 @@ def plot_inflow_outflow(df_plot):
     fig1.show()
 
     # Mass balance plot
-    df_plot.plot(ax=ax2, y="inflow", label="Inflow", color="blue", kind="line", linewidth=5, legend=False)
-    df_plot.plot(ax=ax2, y=["turbine", "overflow"], label=["Turbine", "Spillway"], color=["green", "red"], kind="area",
-                 stacked=True, legend=False)
+
+    # Plot order is important to prevent overwriting of certain lines
+    (df_plot["overflow"] + df_plot["turbine"]).plot(ax=ax2, label="Overflow", kind="area", color="red", legend=False)
+    df_plot["turbine"].plot(ax=ax2, label="Turbine", kind="area", color="Green", legend=False)
+    df_plot.plot(ax=ax2, y="inflow", label="Inflow", color="blue", kind="line", linewidth=1, legend=False)
+
 
     ax2.set_title("Mass balance", fontsize=70)
 
@@ -621,6 +629,7 @@ def plot_inflow_outflow(df_plot):
     ax2.set_ylabel('Discharge [m³/s]', fontdict={'fontsize': 60})
     ax2.set_xlabel('Date ', fontdict={'fontsize': 60})
     ax2.tick_params(axis='both', labelsize=50)
+    ax2.yaxis.reset_ticks()
 
     handles, labels = ax2.get_legend_handles_labels()
     ax2.legend(handles, labels, loc='upper right', fontsize=60)
