@@ -484,7 +484,7 @@ def build_timei_file(up_down_array, concent_array, flow_array, df_time):
     masked_concent_array = concent_array[mask_timeframe]
     masked_flow_array = flow_array[mask_timeframe]
 
-    seconds_array = np.array(masked_df_time).astype(int)
+    seconds_array = np.array(masked_df_time)
 
     # Letter df:
     i_letter_df = pd.DataFrame(data=np.full((seconds_array.shape[0], 1), "I"), columns=['Letter'])
@@ -592,9 +592,8 @@ def plot_inflow_outflow(df_data):
     df_plot["turbine"].replace(0, 0, inplace=True)
     df_plot["overflow"] = df_plot["overflow"].replace(0, int(0))
 
-
-    fig1, ax1 = mp.subplots(figsize=[50, 25])
-    fig2, ax2 = mp.subplots(figsize=[50, 25])
+    fig1, ax1 = mp.subplots(figsize=plot_fig_size)
+    fig2, ax2 = mp.subplots(figsize=plot_fig_size)
 
     # Water level plot
     df_plot.plot(ax=ax1, y="water level", label="Water level", kind="line", stacked=True, legend=False)
@@ -616,20 +615,19 @@ def plot_inflow_outflow(df_data):
 
     # Mass balance plot
     # Plot order is important to prevent overwriting of certain lines
-    (df_plot["overflow"]+df_plot["turbine"]).plot(ax=ax2, label="Overflow",kind="area", color="red", legend=False)
+    (df_plot["overflow"] + df_plot["turbine"]).plot(ax=ax2, label="Overflow", kind="area", color="red", legend=False)
     df_plot["turbine"].plot(ax=ax2, label="Turbine", kind="area", color="Green", legend=False)
-    df_plot.plot(ax=ax2, y="inflow", label="Inflow", color="blue", kind="line", linewidth=5, legend=False)
+    df_plot.plot(ax=ax2, y="inflow", label="Inflow", color="blue", kind="line", linewidth=1, legend=False)
 
     ax2.set_title("Mass balance", fontsize=70)
 
     ax2.grid(b=True, which='major', axis='y', color='lightgrey', linestyle='-')
     ax2.grid(b=True, which='major', axis='x', color='lightgrey', linestyle='-')
 
-    #TODO: Auto height
-    #ax2.set_yticksautp()
     ax2.set_ylabel('Water throughput [m³/s]', fontdict={'fontsize': 60})
     ax2.set_xlabel('Date ', fontdict={'fontsize': 60})
     ax2.tick_params(axis='both', labelsize=50)
+    ax2.yaxis.reset_ticks()
 
     handles, labels = ax2.get_legend_handles_labels()
     ax2.legend(handles, labels, loc='upper right', fontsize=60)

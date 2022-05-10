@@ -13,7 +13,6 @@ https://github.com/KMouris/Sediment_Load_Calculation.
 
 from fun import *
 
-
 # Create results folder
 if not os.path.exists(results_folder):
     os.makedirs(results_folder)
@@ -22,7 +21,7 @@ if not os.path.exists(results_folder):
 # Read SY data:
 filenames_sy = glob.glob(sy_folder + "/*.txt")
 
-# read .b16 fiext insle with discharge data to df
+# read .fiextb16 fiext insle with discharge data to df
 q_df = pd.read_csv(q_path, sep='\t', header=0, skiprows=[1, 2])
 # rename to convert to date time
 q_df.rename(columns={'YY': 'year', 'MM': 'month', 'DD': 'day', 'HH': 'hour'}, inplace=True)
@@ -48,12 +47,14 @@ month_time_df, monthly_volume = monthly_inflow_avg(time_df, q_array)
 sy_dates_df, sy_array = read_sediment_data(filenames_sy)
 
 # Compare flow and concentration available dates, and trim to smallest date range
-if sy_dates_df[0] > month_time_df[0] or sy_dates_df[sy_dates_df.shape[0]-1] < month_time_df[-1]:
+if sy_dates_df[0] > month_time_df[0] or sy_dates_df[sy_dates_df.shape[0] - 1] < month_time_df[-1]:
     print("Flow dates must be changed")
-    timei_total_flows, time_df, monthly_volume, month_time_df, timei_us_ds_array = compare_flow_sediment_dates(sy_dates_df, time_df, timei_total_flows, monthly_volume, month_time_df, timei_us_ds_array)
+    timei_total_flows, time_df, monthly_volume, month_time_df, timei_us_ds_array = compare_flow_sediment_dates(
+        sy_dates_df, time_df, timei_total_flows, monthly_volume, month_time_df, timei_us_ds_array)
 
 # Calculate monthly concentration, for date range of discharge data:
-total_concentration_array, trimmed_sy_dates = calculate_concentration(sy_array, monthly_volume, sy_dates_df, month_time_df)
+total_concentration_array, trimmed_sy_dates = calculate_concentration(sy_array, monthly_volume, sy_dates_df,
+                                                                      month_time_df)
 
 # Separate monthly concentration for the 3 inflow grain size fractions (equally) for each sub-catchment
 timei_concent_array = build_concentration_timei(total_concentration_array, trimmed_sy_dates, time_df)
