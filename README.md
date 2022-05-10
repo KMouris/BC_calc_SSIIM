@@ -59,16 +59,11 @@ column):
 The water level is kept close to the target water level given in wl_threshold. The following logic is applied:
 | Water level | Mass balance | Description |
 | ----------- | ------------ | ----------- |
-| `current_wl` < `target_wl` + `target_wl_lower_boundary` | Turbine = 0, Overflow = 0 | All inflowing water is stored in
-the reservoir |
-| `target_wl` + `target_wl_lower_boundary` < `current_wl` < `target_wl` | Turbine = Inflow/2 (<=turbine_capacity),
-Overflow = 0 | The turbine runs with half of the inflowing water but at maximum at turbine_capacity |
-| `target_wl` < `current_wl` < `target_wl` + `target_wl_upper_boundary` | Turbine = Inflow (<=turbine_capacity),
-Overflow = 0 | The turbine runs with the inflowing water but at maximum at turbine_capacity |
-| `target_wl` + `target_wl_upper_boundary` < `current_wl` < `target_wl_maximum` | Turbine = turbine_capacity, Overflow =
-0 | The turbine runs at full capacity (turbine_capacity) |
-| `target_wl_maximum` <= `current_wl` | Turbine = turbine_capacity, Overflow = Inflow - Turbine (>=0) | The turbine runs
-at full capacity (turbine_capacity) and all excess inflow is dumped at the overflow |
+| `current_wl` < `target_wl` + `target_wl_lower_boundary` | Turbine = 0, Overflow = 0 | All inflowing water is stored in the reservoir |
+| `target_wl` + `target_wl_lower_boundary` < `current_wl` < `target_wl` | Turbine = Inflow/2 (<=turbine_capacity), Overflow = 0 | The turbine runs with half of the inflowing water but at maximum at turbine_capacity |
+| `target_wl` < `current_wl` < `target_wl` + `target_wl_upper_boundary` | Turbine = Inflow (<=turbine_capacity), Overflow = 0 | The turbine runs with the inflowing water but at maximum at turbine_capacity |
+| `target_wl` + `target_wl_upper_boundary` < `current_wl` < `target_wl_maximum` | Turbine = turbine_capacity, Overflow = 0 | The turbine runs at full capacity (turbine_capacity) |
+| `target_wl_maximum` <= `current_wl` | Turbine = turbine_capacity, Overflow = Inflow - Turbine (>=0) | The turbine runs at full capacity (turbine_capacity) and all excess inflow is dumped at the overflow |
 
 Important to note: Using seasonal water level with the dynamic logic above combined with a higher `time_interval` will
 produce bad results and should therefore not be used. It is only recommended to use `time_interval` = 0.
