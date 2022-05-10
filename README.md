@@ -15,45 +15,26 @@ In addition, the following standard Python libraries are used: *glob*, *os*, *sy
 The below-listed input arguments and data have to be provided to run the algorithm. The input arguments are variables
 that can be set in `config.py`.
 
-| Input argument             | Type                                                                                                                                                  | Description |
-|----------------------------|-------------------------------------------------------------------------------------------------------------------------------------------------------|-------------|
-| `q_path`                   | *                                                                                                                                                     
-string*                    | File path (PATH/name.b16) where the results from the WaSim results are stored (see below for format)                                                  |
-| `q_storage`                | *                                                                                                                                                     
-string*                    | File path (PATH/name.txt) where the storage volume to water level corelation is stored                                                                |
-| `sy_folder`                | *                                                                                                                                                     
-string*                    | Folder path (PATH/folder name) where the .txt files with the total sediment yield data for each sub-catchment is found                                |
-| `catchment_order`          | *list of
-strings*                   | Names of sub-catchments to consider, and the .txt files for each subcatchment must have the catchment name in the file name                           |
-| `sediment_density`         | *                                                                                                                                                     
-float*                     | Sediment density (kg/m3) to consider                                                                                                                  |
-| `turbine_capacity`         | *                                                                                                                                                     
-float*                     | Maximum flow (q) that can pass through the turbines                                                                                                   |
-| `time_interval`[^1]        | *                                                                                                                                                     
-integer*                   | Value that indicates the time frequency to use: 0 to keep the input data frequency, 1 for a daily frequency, 2 for a monthly frequency                |
-| `wl_threshold`             | *                                                                                                                                                     
-array*                     | Target water level for each month in the reservoir. The array has to have 12 water levels in meter (see below for logic)                              |
-| `target_wl_upper_boundary` | *                                                                                                                                                     
-integer*                   | The upper boundary relative to the target water level (see below for logic)                                                                           |
-| `target_wl_lower_boundary` | *                                                                                                                                                     
-integer*                   | The lower boundary relative to the target water level as a negative integer (see below for logic)                                                     |
-| `target_wl_maximum`        | *                                                                                                                                                     
-integer*                   | The maximum water level the reservoir can hold  (see below for logic)                                                                                 |
-| `plot_outflow_data`        | *                                                                                                                                                     
-boolean*                   | A mass balance plot will be safed to the results folder as massbalance.png when set true. It displays inflow, turbine capacity and overflow over time |
-| `plot_water_level`         | *                                                                                                                                                     
-boolean*                   | A water level plot will be safed to the results folder as waterlevel.png when set true. It shows the water level over time                            |
-| `plot_fig_size` | *
-array* | A two integer array [width, height] for the size of the plots. It is recommended to have a larger
-width when handling large time frames to improve the quality of the plots. Large figures might break due to memory (use no bigger than 150). |
-| `restrict_timei_date`      | *
-boolean*                   | Reduces the timei output file to the time frame of timei_date_start and timei_date_end when set true                                                  |
-| `timei_date_start`         | *
-string*                    | The start date in string format for the timeframe ()                                                                                                  |
-| `timei_date_end`           | *
-string*                    | The end date in string format for the timeframe                                                                                                       |
-| `results_folder`           | *
-string*                    | Path of the main result folder                                                                                                                        |
+| Input argument             | Type             | Description                                                                                                                                                                                                                                    |
+|----------------------------|------------------|------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `q_path`                   | *string*         | File path (PATH/name.b16) where the results from the WaSim results are stored (see below for format)                                                                                                                                           |
+| `q_storage`                | *string*         | File path (PATH/name.txt) where the storage volume to water level corelation is stored                                                                                                                                                         |
+| `sy_folder`                | *string*         | Folder path (PATH/folder name) where the .txt files with the total sediment yield data for each sub-catchment is found                                                                                                                         |
+| `catchment_order`          | *list of string* | Names of sub-catchments to consider, and the .txt files for each subcatchment must have the catchment name in the file name                                                                                                                    |
+| `sediment_density`         | *float*          | Sediment density (kg/m3) to consider                                                                                                                                                                                                           |
+| `turbine_capacity`         | *float*          | Maximum flow (q) that can pass through the turbines                                                                                                                                                                                            |
+| `time_interval`[^1]        | *integer*        | Value that indicates the time frequency to use: 0 to keep the input data frequency, 1 for a daily frequency, 2 for a monthly frequency                                                                                                         |
+| `wl_threshold`             | *array*          | Target water level for each month in the reservoir. The array has to have 12 water levels in meter (see below for logic)                                                                                                                       |
+| `target_wl_upper_boundary` | *integer*        | The upper boundary relative to the target water level (see below for logic)                                                                                                                                                                    |
+| `target_wl_lower_boundary` | *integer*        | The lower boundary relative to the target water level as a negative integer (see below for logic)                                                                                                                                              |
+| `target_wl_maximum`        | *integer*        | The maximum water level the reservoir can hold  (see below for logic)                                                                                                                                                                          |
+| `plot_outflow_data`        | *boolean*        | A mass balance plot will be safed to the results folder as massbalance.png when set true. It displays inflow, turbine capacity and overflow over time                                                                                          |
+| `plot_water_level`         | *boolean*        | A water level plot will be safed to the results folder as waterlevel.png when set true. It shows the water level over time                                                                                                                     |
+| `plot_fig_size`            | *array*          | A two integer array [width, height] for the size of the plots. It is recommended to have a larger width when handling large time frames to improve the quality of the plots. Large figures might break due to memory (use no bigger than 150). |
+| `restrict_timei_date`      | *boolean*        | Reduces the timei output file to the time frame of timei_date_start and timei_date_end when set true                                                                                                                                           |
+| `timei_date_start`         | *string*         | The start date in string format for the timeframe ()                                                                                                                                                                                           |
+| `timei_date_end`           | *string*         | The end date in string format for the timeframe                                                                                                                                                                                                |
+| `results_folder`           | *string*         | Path of the main result folder                                                                                                                                                                                                                 |
 
 [^1]:more frequencies can be added by the user
 
