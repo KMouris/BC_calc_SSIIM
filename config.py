@@ -68,13 +68,14 @@ CONSTANT INPUT DATA: that must only be changed if more sub-catchments are to be 
 catchment_order: list of strings, with the names of the sub-catchments to consider, in the order they should be 
 considered
 
-sediment_density: float, sediment density (kg/m3) to be used to calculate monthly volume concentration (m3/m3)
-"""
-q_path = r'/home/yendras/hiwi/01_BC_Calculation/Example_Files/WaSim/y_opt.b16'
-q_storage = r'/home/yendras/hiwi/01_BC_Calculation/Python/Input/storage_curve_2019.txt'
-sy_folder = os.path.abspath(r'../Input/Soil_Input')
+grsz_const: boolean, if true a constant concentration for all sediment fraction is implemented. If False, there will 
+be only one fraction sediment_density: float, sediment density (kg/m3) to be used to calculate monthly volume 
+concentration (m3/m3) """
+q_path = r'C:\Users\Mouris\Desktop\BC_SSIIM\Test\Input\qgkobanja.b16'
+q_storage = r'C:\Users\Mouris\Desktop\BC_SSIIM\Test\Input\storage_curve_2019.txt'
+sy_folder = r'C:\Users\Mouris\Desktop\BC_SSIIM\Test\Input\Sediment_input'
 
-results_folder = os.path.abspath(r'../results')
+results_folder = r'C:\Users\Mouris\Desktop\BC_SSIIM\Test\results'
 
 plot_outflow_data = True
 plot_water_level = True
@@ -82,7 +83,7 @@ plot_fig_size = [50, 25]
 
 turbine_capacity = 108.02
 
-time_interval = 0
+time_interval = 1
 
 wl_threshold = [168, 168, 168, 168, 173, 173, 173, 173, 173, 173, 168, 168]
 # Boundaries are within target_volume ( + 0,1 wl)
@@ -91,9 +92,11 @@ target_wl_upper_boundary = 0.1
 target_wl_lower_boundary = -2
 target_wl_maximum = 175
 
-restrict_timei_date = False
+restrict_timei_date = True
 timei_date_start = "01-01-2018"
-timei_date_end = "31-12-2018"
+timei_date_end = "31-12-2020"
 
 catchment_order = ['Devoll', 'Holta', 'Zalli', 'Skebices']
+
+grsz_const = True
 sediment_density = 2650

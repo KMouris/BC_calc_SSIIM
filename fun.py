@@ -425,6 +425,7 @@ def build_concentration_timei(total_concentration, df_month, df_simulation_time)
     sub-catchment for the final timei file (size ix16).
     """
     # Divide each volume concentration equally into 3 grain sizes:
+
     gs_concentration = total_concentration / 3
 
     concent_grain_fractions = np.full((df_simulation_time.shape[0], 4 * 4), 0.0)
@@ -448,6 +449,46 @@ def build_concentration_timei(total_concentration, df_month, df_simulation_time)
     concent_grain_fractions[start_value:, 5:8] = gs_concentration[m, 1]  # Holta
     concent_grain_fractions[start_value:, 9:12] = gs_concentration[m, 2]  # Zalli
     concent_grain_fractions[start_value:, 13:] = gs_concentration[m, 3]  # Skebices
+
+    return concent_grain_fractions
+
+
+def build_concentration_timei_non_const(total_concentration, df_month, df_simulation_time):
+    """
+    Function build the timei file part with concentration values. There must be 4 entries per sub-catchment (with a
+    total of 4 subcatchments): Dependent on the tributary the concentration for the representative grain size
+    fraction is assigned.
+
+    :param total_concentration: np.array, with monthly volume concentrations for each sub-catchment (tx4 size)
+    :param df_month: df, time series with each month for the volume concentration data (tx1)
+    :param df_simulation_time: df, time series with each time interval in the final simulation (ix1, i>t)
+
+    :return: np.array (concent_grain_fractions) with concentration values for each grain size fraction, and each
+    sub-catchment for the final timei file (size ix16).
+    """
+    concent_grain_fractions = np.full((df_simulation_time.shape[0], 4 * 4), 0.0)
+    start_value = 0
+    for m, month in enumerate(df_month):  # Loop through each month
+        for i in range(start_value, df_simulation_time.shape[0]):  # Loop through each simulation time step
+            interval = df_simulation_time[i]
+            if month.month == interval.month and month.year == interval.year:
+                pass
+            else:
+                # When month ends, fill all time steps in that month in the results array
+                concent_grain_fractions[start_value:i, 1] = total_concentration[m, 0]  # Devoll
+                # concent_grain_fractions[start_value:i, 1:4] = total_concentration[m, 0]  # Devoll
+                concent_grain_fractions[start_value:i, 6] = total_concentration[m, 1]  # Holta
+                concent_grain_fractions[start_value:i, 11] = total_concentration[m, 2]  # Zalli
+                concent_grain_fractions[start_value:i, 15] = total_concentration[m, 3]  # Skebices
+
+                start_value = i  # To start in in next month, and avoid looping through all time steps
+                break
+    # Fill in for last month
+    concent_grain_fractions[start_value:i, 1] = total_concentration[m, 0]  # Devoll
+    # concent_grain_fractions[start_value:i, 1:4] = total_concentration[m, 0]  # Devoll
+    concent_grain_fractions[start_value:i, 6] = total_concentration[m, 1]  # Holta
+    concent_grain_fractions[start_value:i, 11] = total_concentration[m, 2]  # Zalli
+    concent_grain_fractions[start_value:i, 15] = total_concentration[m, 3]  # Skebices
 
     return concent_grain_fractions
 
@@ -615,7 +656,6 @@ def plot_inflow_outflow(df_data):
     (df_plot["overflow"] + df_plot["turbine"]).plot(ax=ax2, label="Overflow", kind="area", color="red", legend=False)
     df_plot["turbine"].plot(ax=ax2, label="Turbine", kind="area", color="Green", legend=False)
     df_plot.plot(ax=ax2, y="inflow", label="Inflow", color="blue", kind="line", linewidth=1, legend=False)
-
 
     ax2.set_title("Mass balance", fontsize=70)
 

@@ -58,7 +58,10 @@ total_concentration_array, trimmed_sy_dates = calculate_concentration(sy_array, 
                                                                       month_time_df)
 
 # Separate monthly concentration for the 3 inflow grain size fractions (equally) for each sub-catchment
-timei_concent_array = build_concentration_timei(total_concentration_array, trimmed_sy_dates, time_df)
+if grsz_const:
+    timei_concent_array = build_concentration_timei(total_concentration_array, trimmed_sy_dates, time_df)
+else:
+    timei_concent_array = build_concentration_timei_non_const(total_concentration_array, trimmed_sy_dates, time_df)
 
 # Build TIMEI file
 timei_df = build_timei_file(timei_us_ds_array, timei_concent_array, timei_total_flows, time_df)
