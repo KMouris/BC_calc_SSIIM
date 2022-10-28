@@ -568,8 +568,8 @@ def get_timeframe_mask(df_time):
 
     # Select specific time frame if stated
     if restrict_timei_date:
-        dt_start = parser.parse(timei_date_start)
-        dt_end = parser.parse(timei_date_end)
+        dt_start = parser.parse(timei_date_start, dayfirst=True)
+        dt_end = parser.parse(timei_date_end, dayfirst=True)
 
         mask_timeframe = ((df_time >= dt_start) & (df_time <= dt_end))
 
