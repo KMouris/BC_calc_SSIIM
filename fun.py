@@ -249,8 +249,17 @@ def calculate_outflows_seasonal_wl(inflow_array, df_time):
         spillway_outflow[i] = overflow
 
         # Total water level data
-        us_ds_array[i, 2] = current_wl
-        us_ds_array[i, 3] = current_wl
+        # set min upstream water level if wl > min upstream wl
+        if min_ups_wl:
+            if current_wl < min_wl:
+                us_ds_array[i, 2] = min_wl
+                us_ds_array[i, 3] = current_wl
+            else:
+                us_ds_array[i, 2] = current_wl
+                us_ds_array[i, 3] = current_wl
+        else:
+            us_ds_array[i, 2] = current_wl
+            us_ds_array[i, 3] = current_wl
 
         plot_data[i, 0] = np.int64((round(df_dt.timestamp())))
         plot_data[i, 1] = inflow
@@ -512,7 +521,6 @@ def build_timei_file(up_down_array, concent_array, flow_array, df_time):
 
     :return: saves df (timei_df) with final boundary condition data for timei file
     """
-
     mask_timeframe = get_timeframe_mask(df_time)
 
     df_time = df_time[mask_timeframe]

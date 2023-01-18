@@ -71,9 +71,9 @@ considered
 grsz_const: boolean, if true a constant concentration for all sediment fraction is implemented. If False, there will 
 be only one fraction sediment_density: float, sediment density (kg/m3) to be used to calculate monthly volume 
 concentration (m3/m3) """
-q_path = r'P:\aktiv\2018_DLR_DIRT-X\300_Modelling\310_Models\02_Reservoir_model\10_climate_projections\timei_creation\RCP85_MPI\Discharge\qgkobanja.b16'
-q_storage = r'P:\aktiv\2018_DLR_DIRT-X\300_Modelling\340 Evaluation\Python Codes\BC_SSIIM\BC_calc_SSIIM\Input\storage_curve_2019.txt'
-sy_folder = r'P:\aktiv\2018_DLR_DIRT-X\300_Modelling\310_Models\02_Reservoir_model\10_climate_projections\timei_creation\RCP85_MPI\SL_SY'
+q_path = r'P:\aktiv\2018_DLR_DIRT-X\300_Modelling\310_Models\02_Reservoir_model\10_climate_projections\timei_creation_fluct_WL\RCP85_MPI\Discharge\qgkobanja.b16'
+q_storage = r'P:\aktiv\2018_DLR_DIRT-X\300_Modelling\310_Models\02_Reservoir_model\10_climate_projections\timei_creation_fluct_WL\Input\storage_curve_2019.txt'
+sy_folder = r'P:\aktiv\2018_DLR_DIRT-X\300_Modelling\310_Models\02_Reservoir_model\10_climate_projections\timei_creation_fluct_WL\RCP85_MPI\SL_SY'
 
 results_folder = r'P:\aktiv\2018_DLR_DIRT-X\300_Modelling\310_Models\02_Reservoir_model\10_climate_projections\timei_creation\RCP85_MPI\Reservoir'
 
@@ -84,8 +84,12 @@ plot_fig_size = [50, 25]
 turbine_capacity = 108.02
 
 time_interval = 1
-
+# set the monthly target water level [Jan, Feb ... Dec]
 wl_threshold = [170, 171, 173, 173, 174, 174, 173, 171, 170, 169, 169, 170]
+# set minimum upstream WL
+min_ups_wl = True
+min_wl = 171
+
 # Boundaries are within target_volume ( + 0,4 wl)
 # Emergency boundaries are within target_volume ( - 2 wl & 175 m asl)
 target_wl_upper_boundary = 0.4
@@ -94,7 +98,7 @@ target_wl_maximum = 175
 
 restrict_timei_date = True
 timei_date_start = "01-08-2016"
-timei_date_end = "31-12-2100"
+timei_date_end = "31-12-2020"
 
 catchment_order = ['Devoll', 'Holta', 'ZalliCacivel', 'Skebices']
 
