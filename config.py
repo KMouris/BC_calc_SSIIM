@@ -98,7 +98,7 @@ target_wl_maximum = 175
 
 restrict_timei_date = True
 timei_date_start = "01-08-2016"
-timei_date_end = "31-12-2100"
+timei_date_end = "31-12-2026"
 
 catchment_order = ['Devoll', 'Holta', 'ZalliCacivel', 'Skebices']
 
