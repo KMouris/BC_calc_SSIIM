@@ -71,11 +71,11 @@ considered
 grsz_const: boolean, if true a constant concentration for all sediment fraction is implemented. If False, there will 
 be only one fraction sediment_density: float, sediment density (kg/m3) to be used to calculate monthly volume 
 concentration (m3/m3) """
-q_path = r'P:\aktiv\2018_DLR_DIRT-X\300_Modelling\310_Models\02_Reservoir_model\10_climate_projections\timei_creation_fluct_WL\RCP85_MPI\Discharge\qgkobanja.b16'
-q_storage = r'P:\aktiv\2018_DLR_DIRT-X\300_Modelling\310_Models\02_Reservoir_model\10_climate_projections\timei_creation_fluct_WL\Input\storage_curve_2019.txt'
-sy_folder = r'P:\aktiv\2018_DLR_DIRT-X\300_Modelling\310_Models\02_Reservoir_model\10_climate_projections\timei_creation_fluct_WL\RCP85_MPI\SL_SY'
+q_path = r'P:\aktiv\2018_DLR_DIRT-X\300 Modeling\310_Models\02_Reservoir_model\10_climate_projections\timei_creation_fluct_WL\RCP85_MPI\Discharge\qgkobanja.b16'
+q_storage = r'P:\aktiv\2018_DLR_DIRT-X\300 Modeling\310_Models\02_Reservoir_model\10_climate_projections\timei_creation_fluct_WL\Input\storage_curve_2019.txt'
+sy_folder = r'P:\aktiv\2018_DLR_DIRT-X\300 Modeling\310_Models\02_Reservoir_model\10_climate_projections\timei_creation_fluct_WL\RCP85_MPI\SL_SY'
 
-results_folder = r'P:\aktiv\2018_DLR_DIRT-X\300_Modelling\310_Models\02_Reservoir_model\10_climate_projections\timei_creation\RCP85_MPI\Reservoir'
+results_folder = r'C:\Users\Mouris\Desktop\BC_SSIIM\BC_calc_SSIIM\test'
 
 plot_outflow_data = True
 plot_water_level = True
@@ -98,7 +98,7 @@ target_wl_maximum = 175
 
 restrict_timei_date = True
 timei_date_start = "01-08-2016"
-timei_date_end = "31-12-2020"
+timei_date_end = "31-12-2100"
 
 catchment_order = ['Devoll', 'Holta', 'ZalliCacivel', 'Skebices']
 
