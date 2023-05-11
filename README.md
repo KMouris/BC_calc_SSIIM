@@ -61,7 +61,7 @@ The water level is kept close to the target water level given in wl_threshold. T
 | Water level | Mass balance | Description |
 | ----------- | ------------ | ----------- |
 | `current_wl` < `target_wl` + `target_wl_lower_boundary` | `Turbine` = 0, `Overflow` = 0 | All inflowing water is stored in the reservoir |
-| `target_wl` + `target_wl_lower_boundary` < `current_wl` < `target_wl` | `Turbine` = `Inflow` * 0.5 (<=`turbine_capacity`), `Overflow` = 0 | The turbine runs with half of the inflowing discharge, but not more than the turbine output |
+| `target_wl` + `target_wl_lower_boundary` < `current_wl` < `target_wl` | `Turbine` = `Inflow` * 0.5 (<=`turbine_capacity`), `Overflow` = 0 | The turbine runs with half of the inflowing discharge, but not more than the turbine output|
 | `target_wl` < `current_wl` < `target_wl` + `target_wl_upper_boundary` | `Turbine` = `Inflow` (<=`turbine_capacity`), `Overflow` = 0 | The turbine runs with the inflowing water but at maximum at turbine_capacity |
 | `target_wl` + `target_wl_upper_boundary` < `current_wl` < `target_wl_maximum` | `Turbine` = `turbine_capacity`, `Overflow` = 0 | The turbine runs at full capacity (turbine_capacity) |
 | `target_wl_maximum` <= `current_wl` | `Turbine` = `turbine_capacity`, `Overflow` = `Inflow` - `Turbine` (>=0) | The turbine runs at full capacity (turbine_capacity) and all excess inflow is released through the spillway |
