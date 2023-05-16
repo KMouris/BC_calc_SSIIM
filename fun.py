@@ -643,40 +643,37 @@ def plot_inflow_outflow(df_data):
     # Water level plot
     df_plot.plot(ax=ax1, y="water level", label="Water level", kind="line", stacked=True, legend=False)
 
-    ax1.set_title("Water level", fontsize=70)
+    ax1.grid(True)
+    ax1.grid(True)
 
-    ax1.grid(b=True, which='major', axis='x', color='lightgrey', linestyle='-')
-    ax1.grid(b=True, which='major', axis='y', color='lightgrey', linestyle='-')
-
-    ax1.set_ylabel('Water level [m]', fontdict={'fontsize': 60})
-    ax1.set_xlabel('Date ', fontdict={'fontsize': 60})
-    ax1.tick_params(axis='both', labelsize=50)
+    ax1.set_ylabel('Water level (m)', fontdict={'fontsize': ftsz})
+    ax1.set_xlabel('Date (YYYY)', fontdict={'fontsize': ftsz})
+    ax1.tick_params(axis='both', labelsize=ftsz)
 
     handles, labels = ax1.get_legend_handles_labels()
-    ax1.legend(handles, labels, loc='upper right', fontsize=60)
+    ax1.legend(handles, labels, loc='best', fontsize=ftsz)
 
-    fig1.savefig(os.path.join(results_folder, "waterlevel.png"))
+    fig1.savefig(os.path.join(results_folder, "waterlevel.png"), dpi=600, tight_layout=True)
     fig1.show()
 
     # Mass balance plot
 
     # Plot order is important to prevent overwriting of certain lines
-    (df_plot["overflow"] + df_plot["turbine"]).plot(ax=ax2, label="Overflow", kind="area", color="red", legend=False)
-    df_plot["turbine"].plot(ax=ax2, label="Turbine", kind="area", color="Green", legend=False)
-    df_plot.plot(ax=ax2, y="inflow", label="Inflow", color="blue", kind="line", linewidth=1, legend=False)
+    #(df_plot["overflow"] + df_plot["turbine"]).plot(ax=ax2, label="Spillway", kind="area", color="red", legend=False)
+    df_plot["turbine"].plot(ax=ax2, label="Turbine", kind="line", color="Green", legend=False)
+    df_plot.plot(ax=ax2, y="inflow", label="Inflow", color="blue", kind="line", legend=False)
+    df_plot["overflow"].plot(ax=ax2, label="Spillway", kind="line", color="red", legend=False)
 
-    ax2.set_title("Mass balance", fontsize=70)
+    ax2.grid(True)
+    ax2.grid(True)
 
-    ax2.grid(b=True, which='major', axis='y', color='lightgrey', linestyle='-')
-    ax2.grid(b=True, which='major', axis='x', color='lightgrey', linestyle='-')
-
-    ax2.set_ylabel('Discharge [m³/s]', fontdict={'fontsize': 60})
-    ax2.set_xlabel('Date ', fontdict={'fontsize': 60})
-    ax2.tick_params(axis='both', labelsize=50)
-    ax2.yaxis.reset_ticks()
+    ax2.set_ylabel('Discharge (m³/s)', fontdict={'fontsize': ftsz})
+    ax2.set_xlabel('Date (YYYY)', fontdict={'fontsize': ftsz})
+    #ax2.tick_params(axis='both', labelsize=ftsz)
+    #ax2.yaxis.reset_ticks()
 
     handles, labels = ax2.get_legend_handles_labels()
-    ax2.legend(handles, labels, loc='upper right', fontsize=60)
+    ax2.legend(handles, labels, loc='best', fontsize=ftsz)
 
-    fig2.savefig(os.path.join(results_folder, "massbalance.png"))
+    fig2.savefig(os.path.join(results_folder, "Discharges.png"), dpi=600, tight_layout=True)
     fig2.show()

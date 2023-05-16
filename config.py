@@ -75,11 +75,13 @@ q_path = r'P:\aktiv\2018_DLR_DIRT-X\300 Modeling\310_Models\02_Reservoir_model\1
 q_storage = r'P:\aktiv\2018_DLR_DIRT-X\300 Modeling\310_Models\02_Reservoir_model\10_climate_projections\timei_creation_fluct_WL\Input\storage_curve_2019.txt'
 sy_folder = r'P:\aktiv\2018_DLR_DIRT-X\300 Modeling\310_Models\02_Reservoir_model\10_climate_projections\timei_creation_fluct_WL\RCP85_MPI\SL_SY'
 
-results_folder = r'C:\Users\Mouris\Desktop\BC_SSIIM\BC_calc_SSIIM\test'
+results_folder = r'C:\Users\Mouris\Desktop\BC_SSIIM\Test\results'
 
 plot_outflow_data = True
 plot_water_level = True
-plot_fig_size = [50, 25]
+plot_fig_size = [7.2, 3.6]
+ftsz = 10
+
 
 turbine_capacity = 108.02
 
@@ -97,8 +99,8 @@ target_wl_lower_boundary = -2
 target_wl_maximum = 175
 
 restrict_timei_date = True
-timei_date_start = "01-08-2016"
-timei_date_end = "31-12-2026"
+timei_date_start = "01-01-2059"
+timei_date_end = "31-12-2063"
 
 catchment_order = ['Devoll', 'Holta', 'ZalliCacivel', 'Skebices']
 
